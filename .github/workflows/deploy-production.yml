@@ -27,7 +27,9 @@ jobs:
       - name: Validate branch input
         env:
           DEPLOY_BRANCH: ${{ inputs.branch }}
-        run: git check-ref-format --branch "$DEPLOY_BRANCH"
+        run: |
+          git check-ref-format --branch "$DEPLOY_BRANCH"
+          test "$DEPLOY_BRANCH" = main
 
       - name: Check out selected branch
         uses: actions/checkout@v4
