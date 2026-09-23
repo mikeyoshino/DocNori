@@ -8,6 +8,7 @@ await build({
     "export.worker": "src/SabuySign.Web/Client/editor/export.worker.ts",
     split: "src/SabuySign.Web/Client/split/index.ts",
     merge: "src/SabuySign.Web/Client/merge/index.ts",
+    "convert-jpg": "src/SabuySign.Web/Client/convert-jpg/index.ts",
     site: "src/SabuySign.Web/Client/site.ts",
     navigation: "src/SabuySign.Web/Client/navigation/index.ts",
     mobile: "src/SabuySign.Web/Client/signatures/mobile.ts",

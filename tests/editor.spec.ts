@@ -157,13 +157,13 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(
     page.getByRole("heading", { name: "จัดการเอกสาร ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(6);
-  await expect(page.locator(".document-tool.upcoming")).toHaveCount(3);
+  await expect(page.locator(".document-tool")).toHaveCount(9);
+  await expect(page.locator(".document-tool.upcoming")).toHaveCount(5);
   await page.getByRole("button", { name: "แปลงไฟล์", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "แปลงไฟล์", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".document-tool")).toHaveCount(2);
+  await expect(page.locator(".document-tool")).toHaveCount(5);
   await expect(page.locator(".document-tool").first()).toContainText(
     "Word เป็น PDF",
   );
@@ -173,7 +173,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(page.locator(".document-tool button")).toHaveCount(0);
   await page.getByRole("button", { name: "ทั้งหมด", exact: true }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".document-tool")).toHaveCount(6);
+  await expect(page.locator(".document-tool")).toHaveCount(9);
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: "artifacts/home.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -344,7 +344,9 @@ test("shared navigation has direct tools, grouped dropdowns and mobile keyboard 
   await expect(all).toBeFocused();
   await convert.hover();
   await expect(nav.locator(".convert-dropdown")).toBeVisible();
-  await page.locator(".tools-hero h1").click();
+  // The expanded conversion menu can cover the hero heading; click the
+  // exposed edge of the hero to exercise an actual outside pointer event.
+  await page.locator(".tools-hero").click({ position: { x: 10, y: 10 } });
   await expect(nav.locator(".convert-dropdown")).toBeHidden();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "เปิดเมนูเครื่องมือ" }).click();

@@ -27,7 +27,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   await expect(
     page.getByRole("heading", { name: "จัดการเอกสาร ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(6);
+  await expect(page.locator(".document-tool")).toHaveCount(9);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     "http://localhost:8080/",
@@ -108,7 +108,7 @@ test("landing uses static SSR and tools start only the WebAssembly runtime", asy
   });
   await page.goto("/");
   await page.getByRole("button", { name: "แปลงไฟล์", exact: true }).click();
-  await expect(page.locator(".document-tool")).toHaveCount(2);
+  await expect(page.locator(".document-tool")).toHaveCount(5);
   expect(
     requests.filter((url) => /\.wasm(?:\?|$)|blazor\.boot|_blazor\//.test(url)),
   ).toEqual([]);

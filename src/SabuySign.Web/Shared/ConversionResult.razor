@@ -1,0 +1,12 @@
+<section data-result class="conversion-result" aria-labelledby="conversion-result-title" hidden>
+    <span class="conversion-success-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg></span>
+    <h1 id="conversion-result-title">@Title</h1>
+    <p data-result-summary role="status"></p>
+    <button data-download type="button" class="button button-blue conversion-download">ดาวน์โหลดไฟล์</button>
+    <p class="conversion-note">ดาวน์โหลดเก็บไว้ก่อนปิดหน้านี้หรือโหลดหน้าใหม่</p>
+    <div class="conversion-result-actions"><button data-back type="button" class="button button-quiet"><Icon Name="arrow" /> กลับไปตั้งค่า</button><button data-restart type="button" class="button button-quiet">แปลงไฟล์อื่น</button></div>
+    <a class="conversion-home" href="/">ดูเครื่องมือทั้งหมด</a>
+</section>
+@code {
+    [Parameter] public string Title { get; set; } = "แปลงไฟล์เรียบร้อยแล้ว";
+}

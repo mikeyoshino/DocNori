@@ -1,0 +1,11 @@
+<section data-progress-panel class="conversion-progress" aria-labelledby="conversion-progress-title" hidden>
+    <div class="conversion-spinner" aria-hidden="true"></div>
+    <h1 id="conversion-progress-title">@Title</h1>
+    <p data-progress-label role="status" aria-live="polite">กำลังเตรียมไฟล์…</p>
+    <progress data-progress max="1" value="0" aria-label="ความคืบหน้าการแปลง"></progress>
+    <p class="conversion-note">ไฟล์กำลังแปลงอยู่บนเครื่องของคุณ กรุณาเปิดหน้านี้ไว้</p>
+    <button data-cancel type="button" class="button button-quiet">ยกเลิกการแปลง</button>
+</section>
+@code {
+    [Parameter] public string Title { get; set; } = "กำลังแปลงไฟล์…";
+}

@@ -1,5 +1,10 @@
-// ZIP with stored entries: PDFs are already internally compressed.
+// ZIP with stored entries: PDF and JPG entries are already compressed.
 // Names are generated ASCII names; no document bytes leave the browser.
+const crcTable = Uint32Array.from({ length: 256 }, (_, value) => {
+  for (let bit = 0; bit < 8; bit++)
+    value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0);
+  return value >>> 0;
+});
 export function zipFiles(files: { name: string; bytes: Uint8Array }[]) {
   const parts: Uint8Array[] = [],
     directory: Uint8Array[] = [];
@@ -7,11 +12,8 @@ export function zipFiles(files: { name: string; bytes: Uint8Array }[]) {
   for (const file of files) {
     const name = new TextEncoder().encode(file.name);
     let crc = 0xffffffff;
-    for (const byte of file.bytes) {
-      crc ^= byte;
-      for (let bit = 0; bit < 8; bit++)
-        crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-    }
+    for (const byte of file.bytes)
+      crc = (crc >>> 8) ^ crcTable[(crc ^ byte) & 0xff];
     crc = (crc ^ 0xffffffff) >>> 0;
     const local = new Uint8Array(30 + name.length),
       l = new DataView(local.buffer);

@@ -1,6 +1,6 @@
 # DocNory
 
-ศูนย์รวมเครื่องมือเอกสาร แบ่งหมวดแก้ไขและเซ็น, จัดการไฟล์ PDF, ลดขนาดไฟล์ และแปลงไฟล์ หน้าแรกกรองหมวดได้ กรอก/เซ็น รวม และแยก PDF พร้อมใช้งาน ส่วนลดขนาดและแปลงไฟล์ยังเป็น “เร็ว ๆ นี้”
+ศูนย์รวมเครื่องมือเอกสาร แบ่งหมวดแก้ไขและเซ็น, จัดการไฟล์ PDF, ลดขนาดไฟล์ และแปลงไฟล์ หน้าแรกกรองหมวดได้ กรอก/เซ็น รวม แยก PDF และแปลง PDF เป็น JPG พร้อมใช้งาน ส่วนลดขนาดและแปลง Word/PowerPoint/Excel ยังเป็น “เร็ว ๆ นี้”
 
 เว็บกรอกข้อความไทย–อังกฤษลง PDF ด้วย Blazor Web App (Static SSR + Interactive WebAssembly) และ TypeScript สำหรับ desktop เปิดไฟล์ใน browser โดยไม่อัปโหลดและไม่บันทึกร่าง รองรับหลายหน้า วาง/ย้ายข้อความ กรอบปรับพอดีกับเนื้อหาอัตโนมัติ ปรับขนาดตัวอักษรจากแถบขวา สี การจัดแนว Undo/Redo ลายเซ็นจากคอม/มือถือ และ preview จาก PDF ผลลัพธ์จริงก่อนดาวน์โหลด
 
@@ -45,6 +45,8 @@ POSTGRES_PASSWORD='your-local-password' docker compose -f infra/compose.yaml --p
 - `src/SabuySign.Host/`: ASP.NET Core host, Static SSR routing, SEO metadata, CSP และ sitemap
 - `src/SabuySign.Web/`: client assembly สำหรับ Interactive WebAssembly และ component ที่ใช้ render HTML ร่วมกับ host
 - `Features/Tools/`: หน้าแรกและ catalog เครื่องมือ/หมวดหมู่ แยกจาก editor สำหรับเพิ่มเครื่องมือในอนาคต
+- `Features/PdfToJpg/` และ `Client/convert-jpg/`: แปลงทุกหน้าเป็น JPG หรือดึงรูปภาพที่ฝังใน PDF; เลือกคุณภาพปกติ/สูง และดาวน์โหลด JPG หรือ ZIP โดยประมวลผลบนเครื่องผู้ใช้
+- `Shared/ConversionProgress.razor`, `Shared/ConversionResult.razor` และ `Client/shared/zip.ts`: ส่วนกลางสำหรับเครื่องมือแปลงไฟล์
 - `Features/PdfEditor/`: Blazor UI และ JS interop bridge
 - `Client/editor/text-layout.ts`: วัดกรอบข้อความตามฟอนต์และจำนวนบรรทัด ให้พอดีทั้ง browser และ PDF
 - `Client/editor/session.ts`: ข้อมูลกล่องข้อความและประวัติในหน่วยความจำ

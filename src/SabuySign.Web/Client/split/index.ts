@@ -8,7 +8,7 @@ import {
   exportGroups,
   type PageRange,
 } from "./pdf";
-import { zipFiles } from "./zip";
+import { zipFiles } from "../shared/zip";
 const sessions = new WeakMap<HTMLElement, () => void>();
 export function init(root: HTMLElement) {
   dispose(root);

@@ -66,7 +66,7 @@ test("custom and fixed ranges produce independent PDFs or one deduplicated PDF",
   );
 });
 test("ZIP includes standard CRC32, directory records and the unchanged file bytes", async () => {
-  const { zipFiles } = await import("../src/SabuySign.Web/Client/split/zip");
+  const { zipFiles } = await import("../src/SabuySign.Web/Client/shared/zip");
   const zip = zipFiles([
     { name: "part-1.pdf", bytes: new TextEncoder().encode("123456789") },
   ]);
