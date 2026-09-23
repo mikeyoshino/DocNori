@@ -1,10 +1,18 @@
-<PageTitle>@Tool.Name — DocNory</PageTitle>
+<PageTitle>@(Tool.Id == "fill-sign" ? "เซ็น PDF ออนไลน์ฟรี พร้อมกรอกข้อความ" : Tool.Name) — DocNory</PageTitle>
 <SiteNav />
 <main class="tool-start category-@Tool.Category">
     <nav class="tool-breadcrumb" aria-label="เส้นทางนำทาง"><a href="/">หน้าแรก</a><span aria-hidden="true">/</span><span>@Tool.Name</span></nav>
     <section class="tool-start-intro">
         <span class="tool-card-icon"><ToolArtwork Name="@Tool.Icon" /></span>
-        <h1>@Tool.Name</h1><p>@Tool.Description</p>
+        <h1>@(Tool.Id == "fill-sign" ? "เซ็น PDF ออนไลน์ และกรอกข้อความ" : Tool.Name)</h1>
+        @if (Tool.Id == "fill-sign")
+        {
+            <p>วางลายเซ็นและเพิ่มข้อความภาษาไทยลงใน PDF ได้จากเบราว์เซอร์ ไม่ต้องสมัครสมาชิก เมื่อเสร็จแล้วตรวจไฟล์และดาวน์โหลดกลับไปใช้</p>
+        }
+        else
+        {
+            <p>@Tool.Description</p>
+        }
         @if (Tool.Available)
         {
             <div id="drop-zone" class="tool-file-drop" role="region" aria-label="พื้นที่เปิด PDF">
@@ -22,7 +30,14 @@
     </section>
     @if (Tool.Available)
     {
-        <section class="tool-instructions" aria-labelledby="tool-how-heading"><h2 id="tool-how-heading">กรอกและเซ็น PDF ใน 3 ขั้นตอน</h2><div class="steps"><article><span class="step-number">01</span><h3>เปิดไฟล์ PDF</h3><p>เลือกเอกสารจากเครื่อง<br />ไฟล์จะเปิดในพื้นที่แก้ไข</p></article><article><span class="step-number">02</span><h3>เพิ่มข้อความหรือลายเซ็น</h3><p>กรอกภาษาไทยและอังกฤษ<br />สร้างลายเซ็นจากคอมหรือมือถือ</p></article><article><span class="step-number">03</span><h3>ตรวจแล้วดาวน์โหลด</h3><p>ดูตัวอย่างผลลัพธ์จริง<br />ดาวน์โหลดก่อนปิดหรือรีเฟรชหน้า</p></article></div></section>
+        <section class="tool-instructions" aria-labelledby="tool-how-heading"><h2 id="tool-how-heading">เซ็น PDF ออนไลน์ใน 3 ขั้นตอน</h2><div class="steps"><article><span class="step-number">01</span><h3>เปิดไฟล์ PDF</h3><p>เลือกเอกสารจากเครื่อง<br />ไฟล์จะเปิดในพื้นที่แก้ไข</p></article><article><span class="step-number">02</span><h3>สร้างและวางลายเซ็น</h3><p>วาดลายเซ็นบนคอมพิวเตอร์ หรือสแกน QR Code เพื่อวาดบนมือถือ จากนั้นลากลายเซ็นไปวางบน PDF และเพิ่มข้อความได้</p></article><article><span class="step-number">03</span><h3>ตรวจแล้วดาวน์โหลด</h3><p>ดูตัวอย่างผลลัพธ์จริง<br />ดาวน์โหลดก่อนปิดหรือรีเฟรชหน้า</p></article></div></section>
+        <section class="tool-information" aria-labelledby="tool-information-heading">
+            <h2 id="tool-information-heading">ก่อนนำเอกสารไปใช้</h2>
+            <div class="tool-information-grid">
+                <article><h3>ลายเซ็นที่เพิ่มเป็นแบบไหน?</h3><p>เครื่องมือนี้วางภาพลายเซ็นที่คุณวาดลงบน PDF ไม่ใช่ลายเซ็นดิจิทัลที่ใช้ใบรับรอง หากผู้รับเอกสารกำหนดวิธีเซ็นเฉพาะ ให้ตรวจข้อกำหนดของผู้รับก่อนส่ง</p></article>
+                <article><h3>เอกสารของคุณอยู่ที่ไหน?</h3><p>ไฟล์ PDF เปิดและประมวลผลในเบราว์เซอร์บนเครื่องของคุณ ไม่อัปโหลดเอกสารหรือเก็บร่างไว้ในบัญชี หากใช้มือถือวาดลายเซ็น ระบบจะส่งเฉพาะข้อมูลลายเซ็นที่เข้ารหัสเพื่อเชื่อมกับคอมพิวเตอร์ชั่วคราว</p></article>
+            </div>
+        </section>
     }
 </main>
 @code {

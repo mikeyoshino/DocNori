@@ -17,7 +17,10 @@ app.Use(async (context, next) =>
     context.Response.Headers.XContentTypeOptions = "nosniff";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
     context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-    context.Response.Headers.CacheControl = "no-store";
+    if (context.Request.Path.StartsWithSegments("/api") || !Path.HasExtension(context.Request.Path.Value))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+    }
     if (context.Request.Path == "/tools/merg")
     {
         context.Response.Redirect("/tools/merge", permanent: true);

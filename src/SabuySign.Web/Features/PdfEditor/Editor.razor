@@ -2,7 +2,7 @@
 @using SabuySign.Web.Features.Signatures
 @implements IAsyncDisposable
 @inject IJSRuntime JS
-<PageTitle>กรอกและเซ็น PDF — DocNory</PageTitle>
+<PageTitle>เซ็น PDF ออนไลน์ฟรี พร้อมกรอกข้อความ — DocNory</PageTitle>
 <input id="pdf-file" type="file" accept="application/pdf,.pdf" disabled="@(!Ready)" hidden />
 <div class="landing" hidden="@State.Loaded">
     <ToolStart Tool="@(ToolCatalog.Tools.First(t => t.Id == "fill-sign"))" Ready="Ready" Busy="State.Busy" OnOpenPdf="Pick" />

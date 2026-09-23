@@ -35,7 +35,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   for (const [slug, title] of [
     ["merge", "รวมไฟล์ PDF"],
     ["split", "แยกไฟล์ PDF"],
-    ["fill-sign", "กรอกและเซ็น PDF"],
+    ["fill-sign", "เซ็น PDF ออนไลน์ และกรอกข้อความ"],
   ]) {
     const response = await page.goto(
       new URL(`/tools/${slug}`, page.url()).href,
@@ -44,7 +44,11 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
     await expect(
       page.getByRole("heading", { name: title, exact: true }),
     ).toBeVisible();
-    await expect(page).toHaveTitle(`${title} — DocNory`);
+    await expect(page).toHaveTitle(
+      slug === "fill-sign"
+        ? "เซ็น PDF ออนไลน์ฟรี พร้อมกรอกข้อความ — DocNory"
+        : `${title} — DocNory`,
+    );
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
       "content",
       "index,follow",
@@ -74,6 +78,22 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   const alias = await request.get("/tools/merg", { maxRedirects: 0 });
   expect(alias.status()).toBe(301);
   expect(alias.headers().location).toBe("/tools/merge");
+});
+
+test("signing page explains the real workflow and static assets can be cached", async ({
+  request,
+}) => {
+  const page = await request.get("/tools/fill-sign");
+  expect(page.headers()["cache-control"]).toContain("no-store");
+  const html = await page.text();
+  expect(html).toContain("เซ็น PDF ออนไลน์");
+  expect(html).toContain("วาดลายเซ็นบนคอมพิวเตอร์");
+  expect(html).toContain("สแกน QR Code");
+  expect(html).toContain("ลายเซ็นดิจิทัลที่ใช้ใบรับรอง");
+
+  const script = await request.get("/_framework/blazor.web.js");
+  expect(script.status()).toBe(200);
+  expect(script.headers()["cache-control"] ?? "").not.toContain("no-store");
 });
 
 test("landing uses static SSR and tools start only the WebAssembly runtime", async ({

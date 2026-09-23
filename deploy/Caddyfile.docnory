@@ -1,3 +1,7 @@
+www.docnori.com {
+	redir https://docnori.com{uri} permanent
+}
+
 docnori.com {
 	encode zstd gzip
 

@@ -14,7 +14,10 @@ test("local-only fill, undo, preview and download survives export; reload clears
     page.getByRole("button", { name: "เลือกไฟล์ PDF", exact: true }),
   ).toBeEnabled();
   await expect(
-    page.getByRole("heading", { name: "กรอกและเซ็น PDF", exact: true }),
+    page.getByRole("heading", {
+      name: "เซ็น PDF ออนไลน์ และกรอกข้อความ",
+      exact: true,
+    }),
   ).toBeVisible();
   const doc = await PDFDocument.create();
   doc.addPage([595, 842]);
@@ -68,7 +71,10 @@ test("local-only fill, undo, preview and download survives export; reload clears
   ).toEqual({ local: 0, session: 0, runtimeHashOnly: true });
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "กรอกและเซ็น PDF", exact: true }),
+    page.getByRole("heading", {
+      name: "เซ็น PDF ออนไลน์ และกรอกข้อความ",
+      exact: true,
+    }),
   ).toBeVisible();
 });
 
@@ -242,7 +248,10 @@ test("cards navigate to dedicated tool pages before asking for a file", async ({
     await card.click({ position: { x: 12, y: 12 } });
     await expect(page).toHaveURL(new RegExp(`/tools/${id}$`));
     await expect(
-      page.getByRole("heading", { name, exact: true }),
+      page.getByRole("heading", {
+        name: id === "fill-sign" ? "เซ็น PDF ออนไลน์ และกรอกข้อความ" : name,
+        exact: true,
+      }),
     ).toBeVisible();
     expect(pickers).toBe(0);
     if (id === "fill-sign" || id === "merge")
@@ -272,7 +281,10 @@ test("cards navigate to dedicated tool pages before asking for a file", async ({
   expect(pickers).toBe(1);
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "กรอกและเซ็น PDF", exact: true }),
+    page.getByRole("heading", {
+      name: "เซ็น PDF ออนไลน์ และกรอกข้อความ",
+      exact: true,
+    }),
   ).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
