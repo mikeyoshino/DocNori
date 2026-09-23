@@ -50,3 +50,26 @@ a.tool-launch{display:inline-flex;align-items:center;gap:8px}.tool-launch.tool-p
 .editor-header .docnory-symbol,footer .docnory-symbol{width:29px;height:34px}
 .editor-header .docnory-word,footer .docnory-word{font-size:25px;letter-spacing:-1px}
 @media(max-width:650px){.site-navigation .docnory-symbol{width:31px;height:36px}.site-navigation .docnory-word{font-size:27px}}
+
+/* File-format colors are shared by menus, cards and tool landing pages. */
+.tool-artwork.artwork-to-jpg,
+.tool-artwork.artwork-extract-images {
+    color: #b78103;
+    --category-tint: #fff1bf;
+}
+
+.tool-artwork.artwork-convert,
+.tool-artwork.artwork-from-pdf {
+    color: #4c7ac3;
+    --category-tint: #e0eafb;
+}
+
+.tool-artwork.artwork-to-powerpoint {
+    color: #d65a37;
+    --category-tint: #fbe3d9;
+}
+
+.tool-artwork.artwork-to-excel {
+    color: #348353;
+    --category-tint: #dcefe2;
+}
