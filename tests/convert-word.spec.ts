@@ -232,3 +232,44 @@ test("Thai text remains editable, multiple PDFs download separately in ZIP, and 
     await zip.file("document-01.docx")!.async("uint8array"),
   );
 });
+
+test("outlined pages embed visible images with unique drawing identifiers", async ({
+  page,
+}) => {
+  const pdf = await PDFDocument.create();
+  for (let i = 0; i < 4; i++) {
+    const p = pdf.addPage([612, 792]);
+    p.drawSvgPath("M 0,0 L 200,0 L 200,20 L 0,20 Z", { x: 72, y: 650 });
+    p.drawLine({
+      start: { x: 72, y: 600 },
+      end: { x: 540, y: 600 },
+      thickness: 2,
+    });
+  }
+  await open(page);
+  await page.locator("[data-files]").setInputFiles({
+    name: "outlined.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from(await pdf.save()),
+  });
+  await expect(page.locator("[data-summary]")).toContainText("4 หน้า");
+  await page
+    .getByRole("button", { name: "แปลงเป็น Word", exact: true })
+    .click();
+  await page.getByRole("button", { name: "แปลงต่อโดยไม่ใช้ OCR" }).click();
+  const zip = await output(page);
+  const xml = await zip.file("word/document.xml")!.async("string");
+  const ids = Array.from(
+    xml.matchAll(/<wp:docPr[^>]*\bid="([^"]+)"/g),
+    (m) => m[1],
+  );
+  expect(ids).toHaveLength(4);
+  expect(new Set(ids).size).toBe(4);
+  for (const name of Object.keys(zip.files).filter(
+    (n) => n.startsWith("word/media/") && !zip.files[n].dir,
+  )) {
+    expect((await zip.file(name)!.async("uint8array")).length).toBeGreaterThan(
+      1000,
+    );
+  }
+});

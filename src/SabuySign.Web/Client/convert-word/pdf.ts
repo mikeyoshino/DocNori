@@ -147,6 +147,7 @@ export async function convertToWord(
   for (let f = 0; f < inputs.length; f++) {
     const input = inputs[f];
     const sections: ISectionOptions[] = [];
+    let drawingId = 0;
     await withPdf(input.bytes, signal, async (pdf) => {
       for (let n = 1; n <= pdf.numPages; n++) {
         signal.throwIfAborted();
@@ -188,6 +189,7 @@ export async function convertToWord(
                       height: (canvas.height * scale * 96) / 72,
                     },
                     altText: {
+                      id: String(++drawingId),
                       title: fullPage ? `หน้า ${n} จาก PDF` : "รูปภาพจาก PDF",
                       description: fullPage
                         ? "หน้านี้เป็นรูปภาพ ไม่สามารถแก้ข้อความโดยไม่ใช้ OCR"

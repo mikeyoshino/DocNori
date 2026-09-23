@@ -29,3 +29,6 @@ Browser coverage: SSR/indexable catalog, disabled upcoming OCR, real editable DO
 Downloaded Thai DOCX also opened successfully in macOS Quick Look and textutil; visually inspected Thai vowels/marks. Microsoft Word/LibreOffice application-specific layout compatibility has not been directly tested.
 
 Checks completed: all 26 browser regression tests passed on Docker; all 34 unit tests passed; TypeScript typecheck, Prettier check, dotnet format verification and .NET build passed. A final focused Word run verifies native Word tab elements after the last export improvement.
+
+## Pages compatibility fix
+The supplied four-page outlined PDF contained no extractable text. Its DOCX had four drawings but each received `wp:docPr id="1"` from the library's per-instance ID generator. Assign drawing IDs explicitly and uniquely within each output document. A synthetic four-page outlined PDF regression failed on duplicate IDs before the fix and passes afterward. The user confirmed the corrected output displays all form pages in Pages on Mac; LibreOffice also renders all four pages. User documents remain local and are not committed as fixtures. This fix changes image compatibility, not OCR or editable-text capabilities.
