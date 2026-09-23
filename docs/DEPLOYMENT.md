@@ -74,23 +74,29 @@ in GitHub Actions or an environment file on this server.
 
 ## 3. Add the route without changing existing applications
 
-After uploading `Caddyfile.docnory` to `/tmp` on the VPS, construct and validate
-a candidate using the current Caddyfile:
+After uploading `Caddyfile.docnory` to `/tmp` on the VPS, construct a candidate
+from the **host** Caddyfile, which already contains the TrackZ route. The
+running Caddy container may still have an older inode mounted at
+`/etc/caddy/Caddyfile`, so do not reload from that path: doing so would drop
+TrackZ's route until the full configuration is loaded again.
 
 ```sh
 cat /opt/toystore/Caddyfile /tmp/Caddyfile.docnory > /tmp/Caddyfile.docnory-next
-sudo docker run --rm -e TOYSTORE_DOMAIN=sytoys.shop \
-  -v /tmp/Caddyfile.docnory-next:/etc/caddy/Caddyfile:ro \
-  caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+sudo docker cp /tmp/Caddyfile.docnory-next \
+  toystore-production-caddy-1:/tmp/Caddyfile.docnory-next
+sudo docker exec toystore-production-caddy-1 \
+  caddy validate --config /tmp/Caddyfile.docnory-next
 sudo cp /opt/toystore/Caddyfile /opt/toystore/Caddyfile.before-docnory
 sudo sh -c 'cat /tmp/Caddyfile.docnory-next > /opt/toystore/Caddyfile'
-sudo docker compose -f /opt/toystore/compose.production.yaml exec -T caddy \
-  caddy reload --config /etc/caddy/Caddyfile
+sudo docker exec toystore-production-caddy-1 \
+  caddy reload --config /tmp/Caddyfile.docnory-next
 ```
 
-The in-place write keeps the existing Docker file bind mount active. Also add
-the same block to the SyToyV2 repository's `deploy/Caddyfile` before its next
-release; otherwise that release may remove the route.
+The host file is the source for the next container start; the explicit reload
+loads the same full configuration into the currently running Caddy process.
+Verify TrackZ immediately after reloading. Also add the same block to the
+SyToyV2 repository's `deploy/Caddyfile` before its next release; otherwise
+that release may remove the route.
 
 ## 4. GitHub repository and production environment
 
