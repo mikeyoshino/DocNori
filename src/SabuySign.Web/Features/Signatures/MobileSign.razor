@@ -1,0 +1,17 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>เซ็นบนมือถือ — DocNory</PageTitle>
+<main class="mobile-sign"><a class="brand" href="/"><BrandLogo /></a><span class="eyebrow">ลายเซ็นจากมือถือ</span><h1>เซ็นที่นี่ แล้วนำไปวาง<br />บนเอกสารของคุณ</h1><p>เขียนลายเซ็นด้วยนิ้ว แล้วกดบันทึก<br />ลายเซ็นจะปรากฏบนคอมที่สร้าง QR นี้</p><div class="signature-pad"><canvas id="mobile-pad" aria-label="พื้นที่วาดลายเซ็นบนมือถือ"></canvas><span>เซ็นในพื้นที่นี้</span></div><p id="mobile-status" role="status">กำลังตรวจสอบลิงก์…</p><div class="signature-actions"><button id="mobile-undo" class="button button-quiet" disabled>ย้อนเส้นล่าสุด</button><button id="mobile-clear" class="button button-quiet" disabled>ล้างลายเซ็น</button></div><button id="mobile-save" class="button button-blue full" disabled>บันทึกลายเซ็น</button><p class="field-help">ส่งเฉพาะลายเซ็นที่เข้ารหัส ไม่เปิดเอกสารบนมือถือ<br />ลายเซ็นนี้ใช้ในเอกสารได้เหมือนภาพลายมือชื่อ</p></main>
+@code {
+    private IJSObjectReference? Module;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/mobile.js");
+        await Module.InvokeVoidAsync("init");
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose"); await Module.DisposeAsync(); }
+    }
+}

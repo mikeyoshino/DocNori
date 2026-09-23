@@ -1,0 +1,74 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>แยกไฟล์ PDF — DocNory</PageTitle>
+<SiteNav />
+<main class="split-tool category-organize" @ref="Root">
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="split" /></span>
+        <h1>แยกไฟล์ PDF</h1><p>แบ่งเอกสารตามช่วง หรือเลือกเฉพาะหน้าที่ต้องการ</p>
+        <div class="tool-file-drop" data-drop>
+            <Icon Name="upload" /><h2>เลือก PDF ที่ต้องการแยก</h2>
+            <p>ลากไฟล์มาวางที่นี่ หรือเลือกจากเครื่องของคุณ</p>
+            <button data-choose class="button button-blue" disabled="@(!Ready)">เลือกไฟล์ PDF <Icon Name="arrow" /></button>
+            <span class="file-limits">1 ไฟล์ · ไม่เกิน 25 MB / 100 หน้า</span>
+        </div>
+        <p class="tool-local-note"><Icon Name="lock" /> ประมวลผลบนเครื่องคุณ · ไม่อัปโหลดเอกสาร</p>
+    </section>
+    <input data-file type="file" accept=".pdf,application/pdf" hidden />
+    <div data-workspace class="split-editor" hidden>
+        <section class="split-stage" aria-label="ตัวอย่างเอกสาร">
+            <div class="split-stage-toolbar"><div><strong data-name></strong><span data-preview-status role="status"></span></div><button data-replace class="button button-light">เปลี่ยนไฟล์</button></div>
+            <div data-previews class="split-previews" aria-label="ตัวอย่างหน้า PDF"></div>
+        </section>
+        <aside class="split-sidebar" aria-label="ตั้งค่าการแยกไฟล์">
+            <h1>แยกไฟล์ PDF</h1>
+            <div class="split-mode-tabs" role="group" aria-label="วิธีแยกไฟล์">
+                <button data-mode="ranges" aria-pressed="true"><ToolArtwork Name="split" /><span>แบ่งตามช่วง</span></button>
+                <button data-mode="pages" aria-pressed="false"><ToolArtwork Name="text" /><span>เลือกหน้า</span></button>
+            </div>
+            <div class="split-options">
+                <div data-range-settings>
+                    <h2>รูปแบบช่วงหน้า</h2>
+                    <div class="split-range-modes" role="group" aria-label="รูปแบบช่วงหน้า"><button data-range-mode="custom" aria-pressed="true">กำหนดเอง</button><button data-range-mode="fixed" aria-pressed="false">จำนวนหน้าคงที่</button></div>
+                    <div data-custom><div data-ranges class="split-range-list"></div><button data-add class="button split-add">＋ เพิ่มช่วงหน้า</button></div>
+                    <div data-fixed hidden><label for="split-size">แบ่งทุก ๆ กี่หน้า</label><input data-size id="split-size" type="number" min="1" value="1" /></div>
+                    <label class="split-combine"><input data-combine type="checkbox" /><span>รวมทุกช่วงเป็น PDF เดียว</span></label>
+                    <p class="split-hint">เมื่อรวมช่วง จะเรียงหน้าตามต้นฉบับและไม่นำหน้าที่ซ้ำมาเพิ่มอีก</p>
+                </div>
+                <div data-page-settings hidden>
+                    <label for="split-range">หน้าที่ต้องการแยก</label>
+                    <input data-range id="split-range" type="text" placeholder="เช่น 1-3, 5" aria-describedby="split-selection" />
+                    <p class="split-hint">คลิกภาพเพื่อเลือกหน้า หรือพิมพ์ช่วงหน้า เช่น 1-3, 5</p>
+                    <button data-remaining class="button button-light">ดาวน์โหลดหน้าที่เหลือ</button>
+                </div>
+                <p id="split-selection" data-selection aria-live="polite"></p>
+                <p class="split-hint">ไฟล์อยู่ในเบราว์เซอร์เท่านั้น ปิดหรือรีเฟรชหน้าแล้วข้อมูลจะหาย</p>
+                <details class="split-output-note"><summary>เกี่ยวกับไฟล์ที่ดาวน์โหลด</summary><p>ช่องกรอกข้อมูลจะกลายเป็นเนื้อหาคงที่ บุ๊กมาร์กและลายเซ็นดิจิทัลเดิมจะไม่ถูกเก็บไว้ในไฟล์ใหม่</p></details>
+                <button data-clear class="split-reset">ล้างไฟล์และเริ่มใหม่</button>
+            </div>
+            <div class="split-download"><p data-status role="status" aria-live="polite">ยังไม่ได้เลือกไฟล์</p><p data-error role="alert" class="merge-error" hidden></p><button data-selected class="button button-blue" disabled>แยก PDF <Icon Name="arrow" /></button></div>
+        </aside>
+    </div>
+    <p data-open-error class="merge-error split-open-error" role="alert" hidden></p>
+    <dialog data-preview-dialog class="split-preview-dialog" aria-labelledby="split-preview-title">
+        <div class="split-preview-heading"><h2 id="split-preview-title">ตัวอย่างหน้า PDF</h2><button type="button" class="button button-light">ปิดตัวอย่าง</button></div><canvas aria-label="ภาพเอกสารขนาดใหญ่"></canvas>
+    </dialog>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/split.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

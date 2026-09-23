@@ -1,0 +1,14 @@
+@using SabuySign.Web.Features.PdfEditor
+@using SabuySign.Web.Features.PdfMerge
+@using SabuySign.Web.Features.PdfSplit
+@using SabuySign.Web.Features.Signatures
+@switch (ToolId)
+{
+    case "fill-sign": <Editor /> break;
+    case "merge": <Merge /> break;
+    case "split": <Split /> break;
+    case "sign": <MobileSign /> break;
+}
+@code {
+    [Parameter, EditorRequired] public string ToolId { get; set; } = default!;
+}

@@ -1,0 +1,23 @@
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="@Path" /></svg>
+@code {
+    [Parameter] public string Name { get; set; } = "file";
+    private string Path => Name switch
+    {
+        "merge" => "M5 3v5c0 3 7 3 7 7m7-12v5c0 3-7 3-7 7m0 0v6m-4-4 4 4 4-4",
+        "compress" => "M3 3l6 6m0-5v5H4m17 12-6-6m0 5v-5h5M21 3l-6 6m0-5v5h5M3 21l6-6m0 5v-5H4",
+        "convert" => "M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4",
+        "upload" => "M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5",
+        "arrow" => "M5 12h14m-5-5 5 5-5 5",
+        "lock" => "M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5zM12 14v3",
+        "text" => "M4 5h16M12 5v15M8 20h8M4 5v3m16-3v3",
+        "cursor" => "m5 3 14 10-7 1-3 7z",
+        "undo" => "M9 5 4 10l5 5M4 10h10a6 6 0 0 1 6 6v3",
+        "redo" => "m15 5 5 5-5 5m5-5H10a6 6 0 0 0-6 6v3",
+        "download" => "M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4",
+        "eye" => "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12m10-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6",
+        "trash" => "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7",
+        "check" => "m5 12 4 4L19 6",
+        "close" => "m6 6 12 12M6 18 18 6",
+        _ => "M6 2h8l5 5v15H5V2zM14 2v6h5M8 12h8m-8 4h6"
+    };
+}

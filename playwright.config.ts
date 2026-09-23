@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'tests',testMatch:'*.spec.ts',use:{baseURL:process.env.APP_URL ?? 'http://127.0.0.1:5180',viewport:{width:1440,height:1000},screenshot:'only-on-failure'},webServer:process.env.APP_URL ? undefined : {command:'dotnet run --no-launch-profile --project src/SabuySign.Host --urls http://127.0.0.1:5180',url:'http://127.0.0.1:5180',reuseExistingServer:true,timeout:120000}});

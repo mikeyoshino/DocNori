@@ -1,0 +1,45 @@
+name: sabuysign
+services:
+  web:
+    image: nginx:stable-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - host
+      - relay
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+  host:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    environment:
+      PublicOrigin: ${PUBLIC_ORIGIN:-http://localhost:8080}
+    restart: unless-stopped
+  relay:
+    build:
+      context: ..
+      dockerfile: infra/Relay.Dockerfile
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 256m
+    restart: unless-stopped
+  postgres:
+    image: postgres:17-alpine
+    profiles: [system-data]
+    environment:
+      POSTGRES_DB: sabuysign
+      POSTGRES_USER: sabuysign
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-only}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U sabuysign -d sabuysign"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+volumes:
+  postgres-data:

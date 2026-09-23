@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+umask 027
+
+if [[ ${EUID} -ne 0 || $# -ne 1 || ! "$1" =~ ^https://[a-z0-9][a-z0-9.-]*[a-z0-9]$ ]]; then
+  echo "Usage as root: docnory-bootstrap https://your-docnory-domain" >&2
+  exit 1
+fi
+
+origin="$1"
+compose_file=/opt/docnory/compose.production.yaml
+nginx_file=/opt/docnory/nginx.conf
+configuration_root=/etc/docnory
+compose_env="$configuration_root/compose.env"
+
+for command in docker getent groupadd useradd install mktemp; do
+  command -v "$command" >/dev/null || {
+    echo "Required command is unavailable: $command" >&2
+    exit 1
+  }
+done
+for path in "$compose_file" "$nginx_file"; do
+  if [[ ! -f "$path" || -L "$path" ]]; then
+    echo "Install the reviewed regular file at $path first." >&2
+    exit 1
+  fi
+done
+if ! docker network inspect toystore-production_frontend >/dev/null 2>&1; then
+  echo "Existing Caddy network toystore-production_frontend was not found." >&2
+  exit 1
+fi
+
+getent group docnory >/dev/null || groupadd --system docnory
+if ! getent passwd docnory-deploy >/dev/null; then
+  useradd --system --create-home --home-dir /home/docnory-deploy \
+    --shell /bin/bash --gid docnory docnory-deploy
+fi
+install -d -o root -g docnory -m 0750 /opt/docnory "$configuration_root"
+
+if [[ -e "$compose_env" || -L "$compose_env" ]]; then
+  if [[ ! -f "$compose_env" || -L "$compose_env" ]]; then
+    echo "Unsafe existing configuration path: $compose_env" >&2
+    exit 1
+  fi
+  if ! grep -Fxq "DOCNORY_PUBLIC_ORIGIN=$origin" "$compose_env"; then
+    echo "Existing DocNory origin differs; update it intentionally before redeploying." >&2
+    exit 1
+  fi
+  echo "DocNory deployment account and configuration already exist."
+  exit 0
+fi
+
+temporary_env="$(mktemp "$configuration_root/.compose.bootstrap.XXXXXX")"
+trap 'rm -f "$temporary_env"' EXIT
+printf 'DOCNORY_PUBLIC_ORIGIN=%s\nDOCNORY_HOST_IMAGE=\nDOCNORY_RELAY_IMAGE=\n' \
+  "$origin" > "$temporary_env"
+chown root:docnory "$temporary_env"
+chmod 0640 "$temporary_env"
+mv -f "$temporary_env" "$compose_env"
+
+validation_image="ghcr.io/bootstrap/validation@sha256:$(printf '0%.0s' {1..64})"
+DOCNORY_HOST_IMAGE="$validation_image" DOCNORY_RELAY_IMAGE="$validation_image" \
+  docker compose --env-file "$compose_env" -f "$compose_file" config --quiet
+echo "DocNory isolated deployment configuration is ready."

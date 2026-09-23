@@ -1,0 +1,52 @@
+<svg class="tool-artwork" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true" focusable="false">
+    @switch (Name)
+    {
+        case "split":
+            <g stroke-linecap="round" stroke-linejoin="round"><rect x="25" y="4" width="30" height="31" rx="5" fill="currentColor" /><path d="M33 14h14M33 22h9" stroke="white" stroke-width="3" /><rect x="4" y="49" width="29" height="27" rx="4" fill="var(--category-tint)" /><rect x="47" y="49" width="29" height="27" rx="4" fill="var(--category-tint)" /><path d="M40 36 18 60m0-10v10h10M40 36l22 24m-10 0h10V50" stroke="currentColor" stroke-width="3.5" /></g>
+            break;
+        case "from-pdf":
+            <g stroke-linecap="round" stroke-linejoin="round"><path d="M8 5h23l10 10v31H8a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4Z" fill="var(--category-tint)" /><text x="23" y="32" text-anchor="middle" fill="currentColor" font-family="Arial,sans-serif" font-weight="700" font-size="11">PDF</text><path d="M46 29h18l11 11v31a4 4 0 0 1-4 4H46a4 4 0 0 1-4-4V33a4 4 0 0 1 4-4Z" fill="currentColor" /><path d="m49 46 3 17 7-12 6 12 3-17M8 62h23m-7-7 7 7-7 7" stroke="white" stroke-width="2.7" /><path d="M8 62h23m-7-7 7 7-7 7" stroke="currentColor" stroke-width="3.5" /></g>
+            break;
+        case "merge":
+            <g stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 5h19l10 10v25H9a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4Z" fill="var(--category-tint)" />
+                <path d="M52 5h15l9 10v21a4 4 0 0 1-4 4H45V12a7 7 0 0 1 7-7Z" fill="var(--category-tint)" />
+                <path d="M29 37h21l12 12v23a4 4 0 0 1-4 4H27a4 4 0 0 1-4-4V43a6 6 0 0 1 6-6Z" fill="currentColor" />
+                <path d="M50 37v12h12" fill="white" fill-opacity=".3" />
+                <path d="m17 18 14 14m-10 0h10V22m32-4L49 32m0-10v10h10" stroke="currentColor" stroke-width="3.5" />
+                <path d="M33 57h19M33 65h13" stroke="white" stroke-width="3" />
+            </g>
+            break;
+        case "compress":
+            <g stroke-linecap="round" stroke-linejoin="round">
+                <rect x="23" y="23" width="34" height="34" rx="7" fill="currentColor" />
+                <path d="M33 34h14M33 41h14M33 48h9" stroke="white" stroke-width="2.8" />
+                <path d="M8 8h16v16H8zM56 8h16v16H56zM8 56h16v16H8zM56 56h16v16H56z" fill="var(--category-tint)" />
+                <path d="m8 8 12 12m-9 0h9v-9M72 8 60 20m0-9v9h9M8 72l12-12m-9 0h9v9m52 3L60 60m0 9v-9h9" stroke="currentColor" stroke-width="3.5" />
+            </g>
+            break;
+        case "convert":
+            <g stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 4h27l11 11v33a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4Z" fill="var(--category-tint)" />
+                <path d="M36 4v12h11" fill="currentColor" fill-opacity=".18" />
+                <path d="m13 22 4 19 8-14 7 14 4-19" stroke="currentColor" stroke-width="3.5" />
+                <path d="M45 30h18l12 12v29a4 4 0 0 1-4 4H45a4 4 0 0 1-4-4V34a4 4 0 0 1 4-4Z" fill="currentColor" />
+                <path d="M63 30v12h12" fill="white" fill-opacity=".3" />
+                <text x="58" y="59" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="10">PDF</text>
+                <path d="M9 64h23m-7-7 7 7-7 7" stroke="currentColor" stroke-width="3.5" />
+            </g>
+            break;
+        default:
+            <g stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 4h31l13 13v52a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5V9a5 5 0 0 1 5-5Z" fill="var(--category-tint)" />
+                <path d="M43 4v14h13" fill="currentColor" fill-opacity=".18" />
+                <path d="M16 26h23M27.5 26v18M22 44h11M16 26v4m23-4v4M16 55h15M16 63h10" stroke="currentColor" stroke-width="3" />
+                <path d="m35 57 27-32a5 5 0 0 1 7 0l5 4a5 5 0 0 1 0 7L47 67l-15 6 3-16Z" fill="currentColor" />
+                <path d="m58 30 12 10M35 58l11 9" stroke="white" stroke-width="2.5" />
+            </g>
+            break;
+    }
+</svg>
+@code {
+    [Parameter] public string Name { get; set; } = "text";
+}

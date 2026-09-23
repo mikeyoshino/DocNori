@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+node_modules/
+src/SabuySign.Web/wwwroot/js/
+test-results/
+playwright-report/
+artifacts/
+.env
+.DS_Store

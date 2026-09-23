@@ -1,0 +1,17 @@
+/* Shared file source picker. The host controls placement; this component controls motion. */
+.file-source-picker{--picker-color:var(--blue,#168bd0);display:flex;flex-direction:column;align-items:center;position:relative;width:54px}
+.file-picker-toggle,.file-picker-source{display:flex;align-items:center;justify-content:center;position:relative;border:0;border-radius:50%;background:var(--picker-color);color:white;box-shadow:0 3px 8px #17395620;cursor:pointer}
+.file-picker-toggle{width:54px;height:54px;transition:background-color .16s,box-shadow .16s,transform .2s}
+.file-picker-plus{font-size:34px;line-height:1}.file-picker-toggle:hover{transform:scale(1.04);box-shadow:0 4px 12px #17395630}
+.file-picker-count{position:absolute;top:-8px;left:-7px;width:25px;height:25px;border:2px solid white;border-radius:50%;background:#183046;color:white;font-size:12px;display:grid;place-items:center}.file-picker-count[hidden]{display:none}
+.file-picker-sources{display:flex;flex-direction:column;align-items:center;gap:12px;position:relative;height:0;margin-top:0;visibility:hidden;pointer-events:none;transition:height .22s cubic-bezier(.2,.75,.25,1),margin-top .22s,visibility 0s .24s}
+.file-source-picker.is-open .file-picker-sources{height:calc(var(--source-count)*55px - 12px);margin-top:12px;visibility:visible;pointer-events:auto;transition:height .22s cubic-bezier(.2,.75,.25,1),margin-top .22s,visibility 0s}
+.file-picker-source{width:43px;height:43px;flex-shrink:0;opacity:0;transform:translateY(-18px) scale(.82);transition:transform .22s cubic-bezier(.2,.75,.25,1),opacity .16s}
+.file-picker-source:nth-child(2){transform:translateY(-40px) scale(.82)}.file-picker-source:nth-child(3){transform:translateY(-62px) scale(.82)}
+.file-source-picker.is-open .file-picker-source{opacity:1;transform:translateY(0) scale(1)}.file-source-picker.is-open .file-picker-source:nth-child(2){transition-delay:20ms}.file-source-picker.is-open .file-picker-source:nth-child(3){transition-delay:40ms}
+.file-picker-source svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}.file-picker-source.unavailable{background:#dae2ec;color:#7c8ca1;cursor:not-allowed;box-shadow:none}
+.file-picker-tip{position:absolute;right:calc(100% + 12px);top:50%;transform:translate(4px,-50%);padding:8px 11px;border-radius:5px;background:#253449;color:white;font-size:12px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .16s,transform .16s}
+.file-picker-toggle:hover .file-picker-tip,.file-picker-toggle:focus-visible .file-picker-tip,.file-picker-source:hover .file-picker-tip,.file-picker-source:focus-visible .file-picker-tip{opacity:1;transform:translate(0,-50%)}
+.file-source-picker button:focus-visible{outline:3px solid #76c5fa;outline-offset:4px}
+@media(max-width:760px){.file-source-picker{width:46px}.file-picker-toggle{width:46px;height:46px}.file-picker-tip{font-size:11px;right:calc(100% + 8px)}}
+@media(prefers-reduced-motion:reduce){.file-source-picker *{transition:none!important}.file-picker-toggle:hover{transform:none}}

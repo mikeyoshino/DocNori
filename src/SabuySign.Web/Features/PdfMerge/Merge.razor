@@ -1,0 +1,60 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>รวมไฟล์ PDF — DocNory</PageTitle>
+<SiteNav />
+<main class="merge-tool category-organize" @ref="Root">
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="merge" /></span>
+        <h1>รวมไฟล์ PDF</h1><p>เลือกเอกสาร จัดลำดับไฟล์ แล้วดาวน์โหลดเป็น PDF เดียว</p>
+        <div class="tool-file-drop" data-drop>
+            <Icon Name="upload" /><h2>เลือก PDF ที่ต้องการรวม</h2><p>ลากหลายไฟล์มาวางที่นี่ หรือเลือกจากเครื่องของคุณ</p>
+            <button data-choose class="button button-blue" disabled="@(!Ready)">เลือกไฟล์ PDF <Icon Name="arrow" /></button>
+            <span class="file-limits">2–20 ไฟล์ · ขนาดรวมไม่เกิน 25 MB · รวมไม่เกิน 100 หน้า</span>
+        </div>
+        <p class="tool-local-note"><Icon Name="lock" /> ไฟล์อยู่ในเบราว์เซอร์ · ไม่ต้องล็อกอิน · ไม่มีการเก็บร่าง</p>
+    </section>
+    <input data-files type="file" accept=".pdf,application/pdf" multiple hidden />
+    <div data-workspace class="split-editor merge-editor" hidden>
+        <section data-stage class="split-stage merge-stage" aria-label="รายการไฟล์ที่จะรวม">
+            <div class="split-stage-toolbar"><div><strong>เอกสารที่จะรวม</strong><span>ลากการ์ดเพื่อจัดลำดับ หรือใช้ปุ่มเลื่อนบนการ์ด</span></div></div>
+            <div data-file-tools class="merge-file-tools">
+                <FileSourcePicker Label="เพิ่มไฟล์" />
+                <button data-sort class="merge-sort-toggle" aria-label="เรียงชื่อไฟล์ ก–ฮ / A–Z"><span data-sort-label aria-hidden="true">A↓Z</span><span class="merge-tool-tip">เรียงตามชื่อไฟล์</span></button>
+            </div>
+            <ol data-list class="merge-list merge-document-grid"></ol>
+            <p class="merge-stage-hint">ลากไฟล์ PDF เพิ่มมาวางในพื้นที่นี้ได้</p>
+        </section>
+        <aside class="split-sidebar merge-sidebar" aria-label="ตั้งค่าการรวมไฟล์">
+            <h1>รวมไฟล์ PDF</h1>
+            <div class="split-options">
+                <p class="merge-instruction">จัดลำดับเอกสารทางซ้าย<br />ไฟล์จะถูกรวมตามลำดับจากซ้ายไปขวา</p>
+                <p data-summary></p>
+                <p class="split-hint">2–20 ไฟล์ · ขนาดรวมไม่เกิน 25 MB · รวมไม่เกิน 100 หน้า</p>
+                <p class="split-hint">ภาพตัวอย่างแสดงหน้าแรกของแต่ละไฟล์ การรวมจะนำทุกหน้ามาต่อกัน</p>
+                <p class="split-hint">ประมวลผลบนเครื่องคุณ เอกสารไม่ถูกอัปโหลดหรือบันทึกไว้ในบัญชี</p>
+                <details class="split-output-note"><summary>เกี่ยวกับไฟล์ที่ดาวน์โหลด</summary><p>ช่องกรอกข้อมูลจะกลายเป็นเนื้อหาคงที่ บุ๊กมาร์กและลายเซ็นดิจิทัลเดิมจะไม่ถูกเก็บไว้ในไฟล์ใหม่</p></details>
+                <button data-clear class="split-reset" disabled>ล้างรายการ</button>
+            </div>
+            <div data-footer class="split-download"><button data-merge class="button button-blue" disabled>รวมและดาวน์โหลด PDF <Icon Name="arrow" /></button></div>
+        </aside>
+    </div>
+    <div data-feedback class="merge-feedback"><p data-status role="status" aria-live="polite">ยังไม่ได้เลือกไฟล์</p><p data-error role="alert" class="merge-error" hidden></p></div>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/merge.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

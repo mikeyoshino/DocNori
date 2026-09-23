@@ -1,0 +1,18 @@
+<div class="file-source-picker" data-file-picker style="--source-count: @(ShowCloudOptions ? 3 : 1)">
+    <button type="button" data-picker-toggle class="file-picker-toggle" aria-label="@Label" aria-expanded="false" aria-controls="@MenuId">
+        <span class="file-picker-plus" aria-hidden="true">＋</span><span data-picker-count class="file-picker-count" aria-hidden="true" hidden>0</span><span class="file-picker-tip">@Label</span>
+    </button>
+    <div id="@MenuId" data-picker-sources class="file-picker-sources" aria-hidden="true" inert>
+        <button type="button" data-picker-local class="file-picker-source" aria-label="เลือกไฟล์จากเครื่อง"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 21h8M12 16v5"/></svg><span class="file-picker-tip">เลือกไฟล์จากเครื่อง</span></button>
+        @if (ShowCloudOptions)
+        {
+            <button type="button" class="file-picker-source unavailable" aria-disabled="true" aria-label="Google Drive ยังไม่เชื่อมต่อ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 6 0 7 12-3 6H5l-3-6ZM9 3l10 18M15 3 5 21M2 15h20"/></svg><span class="file-picker-tip">Google Drive · ยังไม่เชื่อมต่อ</span></button>
+            <button type="button" class="file-picker-source unavailable" aria-disabled="true" aria-label="Dropbox ยังไม่เชื่อมต่อ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 7 5-4 5 4-5 4Zm10 0 5-4 5 4-5 4ZM2 15l5-4 5 4-5 4Zm10 0 5-4 5 4-5 4ZM7 20l5 3 5-3"/></svg><span class="file-picker-tip">Dropbox · ยังไม่เชื่อมต่อ</span></button>
+        }
+    </div>
+</div>
+@code {
+    [Parameter] public string Label { get; set; } = "เพิ่มไฟล์";
+    [Parameter] public bool ShowCloudOptions { get; set; } = true;
+    private string MenuId { get; } = $"file-sources-{Guid.NewGuid():N}";
+}

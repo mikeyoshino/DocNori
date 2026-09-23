@@ -1,0 +1,10 @@
+docnori.com {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		-Server
+	}
+
+	reverse_proxy docnory-web:8080
+}

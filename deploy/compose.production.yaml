@@ -1,0 +1,42 @@
+name: docnory-production
+
+services:
+  web:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    volumes:
+      - /opt/docnory/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      backend:
+      frontend:
+        aliases:
+          - docnory-web
+    depends_on:
+      - host
+      - relay
+
+  host:
+    image: ${DOCNORY_HOST_IMAGE:?Set an immutable DocNory host image digest}
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      PublicOrigin: ${DOCNORY_PUBLIC_ORIGIN:?Set the public HTTPS origin}
+    networks:
+      - backend
+
+  relay:
+    image: ${DOCNORY_RELAY_IMAGE:?Set an immutable DocNory relay image digest}
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 256m
+    networks:
+      - backend
+
+networks:
+  backend:
+    internal: true
+  frontend:
+    name: toystore-production_frontend
+    external: true

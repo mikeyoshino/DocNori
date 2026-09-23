@@ -1,0 +1,53 @@
+@page "/"
+@page "/{*Path}"
+@inject PublicSite Site
+<PageTitle>@Title</PageTitle>
+<HeadContent>
+    <meta name="description" content="@Description" />
+    <meta name="robots" content="@(Indexable ? "index,follow" : "noindex,follow")" />
+    @if (Indexable) { <link rel="canonical" href="@Site.Url(CanonicalPath)" /> }
+    <meta property="og:title" content="@Title" />
+    <meta property="og:description" content="@Description" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="th_TH" />
+    @if (Indexable) { <meta property="og:url" content="@Site.Url(CanonicalPath)" /> }
+</HeadContent>
+@if (NormalizedPath == "")
+{
+    <ToolHome />
+}
+else if (NormalizedPath == "sign")
+{
+    <ToolRuntime ToolId="sign" @rendermode="InteractiveWebAssembly" />
+}
+else if (Tool is { Available: true })
+{
+    <ToolRuntime ToolId="@Tool.Id" @rendermode="InteractiveWebAssembly" />
+}
+else if (Tool is not null)
+{
+    <ToolStart Tool="Tool" />
+}
+else
+{
+    <SiteNav />
+    <main class="tool-start"><h1>ไม่พบเครื่องมือนี้</h1><p>ลิงก์อาจไม่ถูกต้อง กรุณาเลือกเครื่องมือจากหน้าแรก</p><a class="button button-blue" href="/">กลับไปเลือกเครื่องมือ</a></main>
+}
+@code {
+    [Parameter] public string? Path { get; set; }
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    private string NormalizedPath => (Path ?? "").TrimEnd('/');
+    private DocumentTool? Tool => ToolCatalog.Tools.FirstOrDefault(t => NormalizedPath == $"tools/{t.Id}");
+    private bool Indexable => NormalizedPath == "" || Tool is { Available: true };
+    private string CanonicalPath => NormalizedPath == "" ? "/" : $"/tools/{Tool!.Id}";
+    private string Title => NormalizedPath == "" ? "DocNory — เครื่องมือจัดการเอกสาร" : Tool is not null ? $"{Tool.Name} — DocNory" : NormalizedPath == "sign" ? "เซ็นบนมือถือ — DocNory" : "ไม่พบเครื่องมือ — DocNory";
+    private string Description => Tool?.Description ?? (NormalizedPath == "" ? "กรอกข้อความภาษาไทย เซ็น รวม และแยก PDF ได้ง่าย ๆ ไม่ต้องสมัครสมาชิก ทำเสร็จแล้วดาวน์โหลดไปใช้ได้เลย" : "เครื่องมือจัดการเอกสาร DocNory");
+    protected override void OnParametersSet()
+    {
+        if (NormalizedPath != "" && NormalizedPath != "sign" && Tool is null)
+        {
+            // Render the fallback document first; commit its real HTTP status with the headers.
+            HttpContext.Response.OnStarting(() => { HttpContext.Response.StatusCode = StatusCodes.Status404NotFound; return Task.CompletedTask; });
+        }
+    }
+}

@@ -1,0 +1,12 @@
+<section class="nav-tool-group category-@Category">
+    <h2>@Title</h2>
+    @foreach (var tool in Items)
+    {
+        <a class="nav-tool-link" href="@($"/tools/{tool.Id}")"><ToolArtwork Name="@tool.Icon" /><span>@tool.Name@if (!tool.Available){<small>เร็ว ๆ นี้</small>}</span></a>
+    }
+</section>
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Category { get; set; } = "";
+    [Parameter] public IEnumerable<DocumentTool> Items { get; set; } = [];
+}

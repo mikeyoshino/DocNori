@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+umask 027
+
+if [[ ${EUID} -ne 0 || $# -ne 2 ]]; then
+  echo "Usage as root: docnory-deploy <host-image-digest> <relay-image-digest>" >&2
+  exit 1
+fi
+
+image_pattern='^ghcr\.io/[a-z0-9][a-z0-9._/-]*@sha256:[0-9a-f]{64}$'
+if [[ ! "$1" =~ $image_pattern || ! "$2" =~ $image_pattern ]]; then
+  echo "Both images must be immutable ghcr.io/owner/image@sha256:<64 hex> references." >&2
+  exit 1
+fi
+
+next_host="$1"
+next_relay="$2"
+compose_file=/opt/docnory/compose.production.yaml
+nginx_file=/opt/docnory/nginx.conf
+compose_env=/etc/docnory/compose.env
+runtime_env=""
+current_host=""
+current_relay=""
+origin=""
+deployment_succeeded=false
+
+exec 9>/run/lock/docnory-deploy.lock
+if ! flock -n 9; then
+  echo "Another DocNory deployment is running." >&2
+  exit 1
+fi
+
+for path in "$compose_file" "$nginx_file" "$compose_env"; do
+  if [[ ! -f "$path" || -L "$path" ]]; then
+    echo "Required regular file is missing or unsafe: $path" >&2
+    exit 1
+  fi
+done
+if ! docker network inspect toystore-production_frontend >/dev/null 2>&1; then
+  echo "Existing Caddy network toystore-production_frontend was not found." >&2
+  exit 1
+fi
+
+origin="$(sed -n 's/^DOCNORY_PUBLIC_ORIGIN=//p' "$compose_env")"
+current_host="$(sed -n 's/^DOCNORY_HOST_IMAGE=//p' "$compose_env")"
+current_relay="$(sed -n 's/^DOCNORY_RELAY_IMAGE=//p' "$compose_env")"
+if [[ ! "$origin" =~ ^https://[a-z0-9][a-z0-9.-]*[a-z0-9]$ ]] \
+  || [[ -n "$current_host" && ! "$current_host" =~ $image_pattern ]] \
+  || [[ -n "$current_relay" && ! "$current_relay" =~ $image_pattern ]]; then
+  echo "Existing DocNory deployment configuration is invalid." >&2
+  exit 1
+fi
+
+runtime_env="$(mktemp /etc/docnory/.compose.runtime.XXXXXX)"
+cleanup() { [[ -z "$runtime_env" ]] || rm -f "$runtime_env"; }
+trap cleanup EXIT
+
+write_environment() {
+  local destination="$1" host_image="$2" relay_image="$3"
+  printf 'DOCNORY_PUBLIC_ORIGIN=%s\nDOCNORY_HOST_IMAGE=%s\nDOCNORY_RELAY_IMAGE=%s\n' \
+    "$origin" "$host_image" "$relay_image" > "$destination"
+  chown root:docnory "$destination"
+  chmod 0640 "$destination"
+}
+
+write_environment "$runtime_env" "$next_host" "$next_relay"
+compose() { docker compose --env-file "$runtime_env" -f "$compose_file" "$@"; }
+
+rollback() {
+  local exit_code=$?
+  if [[ "$deployment_succeeded" == true ]]; then return; fi
+  compose logs --no-color --tail 80 web host relay >&2 || true
+  if [[ -n "$current_host" && -n "$current_relay" ]]; then
+    write_environment "$runtime_env" "$current_host" "$current_relay"
+    restore_env="$(mktemp /etc/docnory/.compose.rollback.XXXXXX)"
+    write_environment "$restore_env" "$current_host" "$current_relay"
+    mv -f "$restore_env" "$compose_env"
+    compose up -d --force-recreate host relay web || true
+    echo "DocNory update failed; previous application images were restored." >&2
+  else
+    compose stop web host relay || true
+    echo "Initial DocNory deployment failed; no previous images existed." >&2
+  fi
+  exit "$exit_code"
+}
+trap rollback ERR
+
+compose config --quiet
+compose pull host relay web
+compose up -d --force-recreate host relay web
+ready=false
+for _ in {1..30}; do
+  if compose exec -T web wget -q -O /dev/null http://127.0.0.1:8080/ >/dev/null 2>&1; then
+    ready=true
+    break
+  fi
+  sleep 2
+done
+if [[ "$ready" != true ]]; then
+  echo "DocNory did not become ready within 60 seconds." >&2
+  false
+fi
+
+next_env="$(mktemp /etc/docnory/.compose.next.XXXXXX)"
+write_environment "$next_env" "$next_host" "$next_relay"
+mv -f "$next_env" "$compose_env"
+deployment_succeeded=true
+trap - ERR
+echo "DocNory is ready at $origin"

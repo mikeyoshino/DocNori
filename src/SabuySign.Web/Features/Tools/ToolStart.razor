@@ -1,0 +1,33 @@
+<PageTitle>@Tool.Name — DocNory</PageTitle>
+<SiteNav />
+<main class="tool-start category-@Tool.Category">
+    <nav class="tool-breadcrumb" aria-label="เส้นทางนำทาง"><a href="/">หน้าแรก</a><span aria-hidden="true">/</span><span>@Tool.Name</span></nav>
+    <section class="tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="@Tool.Icon" /></span>
+        <h1>@Tool.Name</h1><p>@Tool.Description</p>
+        @if (Tool.Available)
+        {
+            <div id="drop-zone" class="tool-file-drop" role="region" aria-label="พื้นที่เปิด PDF">
+                <Icon Name="upload" /><h2>เลือก PDF ที่ต้องการกรอกหรือเซ็น</h2>
+                <p>ลากไฟล์มาวางที่นี่ หรือเลือกจากเครื่องของคุณ</p>
+                <button class="button button-blue" @onclick="OnOpenPdf" disabled="@(!Ready || Busy)">@(Busy ? "กำลังเปิดเอกสาร…" : "เลือกไฟล์ PDF") <Icon Name="arrow" /></button>
+                <span class="file-limits">PDF · สูงสุด 25 MB / 100 หน้า</span>
+            </div>
+            <p class="tool-local-note"><Icon Name="lock" /> ไม่อัปโหลดไฟล์ PDF · ไม่ต้องล็อกอิน · ไม่มีการเก็บร่าง</p>
+        }
+        else
+        {
+            <div class="tool-coming-soon"><span class="tool-availability">เร็ว ๆ นี้</span><h2>เครื่องมือนี้กำลังพัฒนา</h2><p>ยังไม่เปิดรับไฟล์ในขณะนี้<br />คุณสามารถใช้เครื่องมือกรอกและเซ็น PDF ได้แล้ววันนี้</p><a class="button button-dark" href="/tools/fill-sign">ไปที่กรอกและเซ็น PDF <Icon Name="arrow" /></a></div>
+        }
+    </section>
+    @if (Tool.Available)
+    {
+        <section class="tool-instructions" aria-labelledby="tool-how-heading"><h2 id="tool-how-heading">กรอกและเซ็น PDF ใน 3 ขั้นตอน</h2><div class="steps"><article><span class="step-number">01</span><h3>เปิดไฟล์ PDF</h3><p>เลือกเอกสารจากเครื่อง<br />ไฟล์จะเปิดในพื้นที่แก้ไข</p></article><article><span class="step-number">02</span><h3>เพิ่มข้อความหรือลายเซ็น</h3><p>กรอกภาษาไทยและอังกฤษ<br />สร้างลายเซ็นจากคอมหรือมือถือ</p></article><article><span class="step-number">03</span><h3>ตรวจแล้วดาวน์โหลด</h3><p>ดูตัวอย่างผลลัพธ์จริง<br />ดาวน์โหลดก่อนปิดหรือรีเฟรชหน้า</p></article></div></section>
+    }
+</main>
+@code {
+    [Parameter, EditorRequired] public DocumentTool Tool { get; set; } = default!;
+    [Parameter] public bool Ready { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback OnOpenPdf { get; set; }
+}

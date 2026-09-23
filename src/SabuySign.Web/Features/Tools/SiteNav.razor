@@ -1,0 +1,33 @@
+<header class="site-navigation">
+    <div class="site-navigation-inner">
+        <a class="brand" href="/"><BrandLogo /></a>
+        <button class="nav-mobile-toggle" type="button" aria-label="เปิดเมนูเครื่องมือ" aria-expanded="false" aria-controls="primary-tool-nav"><span aria-hidden="true">☰</span> เมนู</button>
+        <nav id="primary-tool-nav" class="primary-tool-nav" aria-label="เมนูหลัก">
+            <a class="primary-nav-link" href="/tools/merge">รวม PDF</a>
+            <a class="primary-nav-link" href="/tools/split">แยก PDF</a>
+            <a class="primary-nav-link" href="/tools/compress">ลดขนาด PDF</a>
+            <details class="nav-disclosure nav-convert">
+                <summary>แปลง PDF <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></summary>
+                <div class="nav-dropdown convert-dropdown">
+                    <ToolMenuGroup Title="แปลงเป็น PDF" Category="convert" Items="ToPdf" />
+                    <ToolMenuGroup Title="แปลงจาก PDF" Category="convert" Items="FromPdf" />
+                </div>
+            </details>
+            <details class="nav-disclosure">
+                <summary>เครื่องมือทั้งหมด <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></summary>
+                <div class="nav-dropdown all-tools-dropdown">
+                    <ToolMenuGroup Title="จัดการไฟล์ PDF" Category="organize" Items='InCategory("organize")' />
+                    <ToolMenuGroup Title="ลดขนาดไฟล์" Category="optimize" Items='InCategory("optimize")' />
+                    <ToolMenuGroup Title="แปลงเป็น PDF" Category="convert" Items="ToPdf" />
+                    <ToolMenuGroup Title="แปลงจาก PDF" Category="convert" Items="FromPdf" />
+                    <ToolMenuGroup Title="แก้ไขและเซ็น" Category="edit" Items='InCategory("edit")' />
+                </div>
+            </details>
+        </nav>
+    </div>
+</header>
+@code {
+    private static IEnumerable<DocumentTool> InCategory(string category) => ToolCatalog.Tools.Where(t => t.Category == category);
+    private static IEnumerable<DocumentTool> ToPdf => InCategory("convert").Where(t => t.Id.EndsWith("-to-pdf", StringComparison.Ordinal));
+    private static IEnumerable<DocumentTool> FromPdf => InCategory("convert").Where(t => t.Id.StartsWith("pdf-to-", StringComparison.Ordinal));
+}

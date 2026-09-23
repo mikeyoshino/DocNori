@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SabuySign.Relay/SabuySign.Relay.csproj" />
+    <Project Path="src/SabuySign.Host/SabuySign.Host.csproj" />
+    <Project Path="src/SabuySign.Web/SabuySign.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SabuySign.Relay.Tests/SabuySign.Relay.Tests.csproj" />
+  </Folder>
+</Solution>

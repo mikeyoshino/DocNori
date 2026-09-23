@@ -1,0 +1,20 @@
+<dialog id="signature-source" class="signature-dialog" aria-labelledby="signature-title">
+    <div class="signature-heading"><div><span class="eyebrow">ลายเซ็นของคุณ</span><h2 id="signature-title">เลือกว่าอยากเซ็นที่ไหน</h2></div><button class="tool" data-close-signature aria-label="ปิดหน้าลายเซ็น">×</button></div>
+    <div class="signature-choices"><button id="sign-desktop" class="signature-choice"><strong>สร้างบนคอม</strong><span>ใช้เมาส์หรือปากกาวาดลายเซ็น<br />แล้วกดบันทึก</span></button><button id="sign-phone" class="signature-choice"><strong>สร้างบนมือถือ</strong><span>สแกน QR แล้วใช้นิ้วเซ็น<br />บนหน้าจอโทรศัพท์</span></button></div>
+    <p class="field-help">ลายเซ็นอยู่ในหน้านี้ชั่วคราว ไม่เก็บในบัญชี<br />ปิดหรือรีเฟรชหน้าแล้วจะหาย</p>
+</dialog>
+<dialog id="signature-desktop" class="signature-dialog" aria-labelledby="desktop-sign-title">
+    <div class="signature-heading"><div><span class="eyebrow">สร้างบนคอม</span><h2 id="desktop-sign-title">เขียนลายเซ็นของคุณ</h2></div><button class="tool" data-close-signature aria-label="ปิดหน้าวาดลายเซ็น">×</button></div>
+    <div class="signature-pad"><canvas id="desktop-pad" aria-label="พื้นที่วาดลายเซ็นบนคอม"></canvas><span>เซ็นในพื้นที่นี้</span></div>
+    <p id="desktop-sign-error" role="alert"></p>
+    <div class="signature-actions"><button id="desktop-undo" class="button button-quiet">ย้อนเส้นล่าสุด</button><button id="desktop-clear" class="button button-quiet">ล้างลายเซ็น</button><button id="desktop-save" class="button button-blue" disabled>บันทึกลายเซ็น</button></div>
+    <p class="field-help">บันทึกแล้วลากลายเซ็นจากแถบขวาไปวางบน PDF ได้</p>
+</dialog>
+<dialog id="signature-phone" class="signature-dialog phone-pair-dialog" aria-labelledby="phone-sign-title">
+    <div class="signature-heading"><div><span class="eyebrow">สร้างบนมือถือ</span><h2 id="phone-sign-title">สแกนเพื่อเซ็นบนมือถือ</h2></div><button class="tool" data-close-signature aria-label="ยกเลิกการเชื่อมต่อมือถือ">×</button></div>
+    <canvas id="signature-qr" aria-label="QR สำหรับเปิดหน้าวาดลายเซ็น"></canvas>
+    <p id="pair-status" role="status"></p><p id="pair-origin-note" class="field-help"></p>
+    <a id="pair-link" target="_blank" rel="noreferrer" hidden>เปิดหน้าวาดลายเซ็น</a>
+    <p class="field-help">QR ใช้ได้ 5 นาที อย่าส่งต่อให้ผู้อื่น<br />มือถือส่งเฉพาะลายเซ็นที่เข้ารหัส ไม่มีการส่ง PDF</p>
+    <button id="pair-retry" class="button button-soft">สร้าง QR ใหม่</button>
+</dialog>

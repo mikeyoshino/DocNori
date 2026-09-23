@@ -1,0 +1,57 @@
+<PageTitle>DocNory — เครื่องมือจัดการเอกสาร</PageTitle>
+<SiteNav />
+<main class="tools-home" data-tool-directory>
+    <section class="tools-hero">
+        <span class="eyebrow">พื้นที่ทำงานสำหรับคุณ</span>
+        <h1>จัดการเอกสาร<br /><span>ให้เป็นเรื่องง่าย</span></h1>
+        <p>ตั้งแต่กรอกและเซ็น ไปจนถึงรวมไฟล์ ลดขนาด และแปลงเอกสาร<br class="desktop-break" /> เลือกเครื่องมือที่ตรงกับงาน แล้วเริ่มได้จากที่เดียว</p>
+        <span class="tools-release-note"><span class="status-dot"></span>กรอก เซ็น รวม และแยก PDF ใช้ได้แล้ว · เครื่องมืออื่นกำลังพัฒนา</span>
+    </section>
+    <section id="tools" class="tool-directory" aria-labelledby="tools-heading">
+        <div class="directory-heading"><div><h2 id="tools-heading">วันนี้อยากจัดการอะไร?</h2><p>เลือกดูเครื่องมือตามหมวดงานของคุณ</p></div><span class="directory-count" aria-live="polite">@VisibleTools.Count() เครื่องมือ</span></div>
+        <nav class="category-menu" aria-label="หมวดหมู่เครื่องมือ">
+            <button class="category-button @(Category == "all" ? "selected" : "")" aria-pressed="@(Category == "all" ? "true" : "false")" data-filter="all">ทั้งหมด</button>
+            @foreach (var category in ToolCatalog.Categories)
+            {
+                <button class="category-button category-@category.Id @(Category == category.Id ? "selected" : "")" aria-pressed="@(Category == category.Id ? "true" : "false")" data-filter="@category.Id"><span class="category-dot" aria-hidden="true"></span>@category.Label</button>
+            }
+        </nav>
+        <div class="tool-groups">
+            @foreach (var group in ToolCatalog.Categories.Where(c => VisibleTools.Any(t => t.Category == c.Id)))
+            {
+                <section class="tool-category category-@group.Id" data-tool-category="@group.Id" aria-labelledby="category-heading-@group.Id" @key="group.Id">
+                    <h3 class="tool-category-heading" id="category-heading-@group.Id"><span class="category-dot" aria-hidden="true"></span>@group.Label</h3>
+                    <div class="tool-cards">
+            @foreach (var tool in VisibleTools.Where(t => t.Category == group.Id))
+            {
+                <article class="document-tool @(tool.Available ? "available" : "upcoming")" @key="tool.Id">
+                    <div class="tool-card-top"><span class="tool-card-icon"><ToolArtwork Name="@tool.Icon" /></span><span class="tool-availability">@(tool.Available ? "พร้อมใช้งาน" : "เร็ว ๆ นี้")</span></div>
+                    <h4>@tool.Name</h4><p>@tool.Description</p>
+                    <div class="tool-card-footer"><span>@tool.Formats</span>
+                        @if (tool.Available)
+                        {
+                            <a class="tool-launch" href="@($"/tools/{tool.Id}")" aria-label="@($"เปิดเครื่องมือ{tool.Name}")">เปิดเครื่องมือ <Icon Name="arrow" /></a>
+                        }
+                        else
+                        {
+                            <a class="tool-launch tool-pending" href="@($"/tools/{tool.Id}")" aria-label="@($"ดูรายละเอียด{tool.Name}")">ดูรายละเอียด <Icon Name="arrow" /></a>
+                        }
+                    </div>
+                </article>
+            }
+                    </div>
+                </section>
+            }
+        </div>
+    </section>
+    <section class="quick-start" aria-labelledby="quick-start-heading">
+        <div class="quick-start-copy"><span class="eyebrow">พร้อมใช้งานตอนนี้</span><h2 id="quick-start-heading">มี PDF ที่ต้องกรอกหรือเซ็น?</h2><p>เปิดไฟล์จากเครื่อง เพิ่มข้อความหรือลายเซ็น<br />แล้วดาวน์โหลดกลับไปใช้ได้เลย</p><span class="quick-privacy"><Icon Name="lock" /> เอกสารอยู่ในเครื่องของคุณ</span></div>
+        <div class="quick-upload"><ToolArtwork Name="text" /><h3>กรอกและเซ็น PDF</h3><p>ข้อความไทย–อังกฤษ และลายเซ็นของคุณ</p><a class="button button-blue" href="/tools/fill-sign">เปิดเครื่องมือ <Icon Name="arrow" /></a></div>
+    </section>
+    <section id="privacy" class="privacy-section tools-privacy"><span class="privacy-icon"><Icon Name="lock" /></span><div><h2>เอกสารเป็นส่วนตัว ใช้งานได้อย่างสบายใจ</h2><p>ทุกขั้นตอนทำบนเครื่องของคุณเอง ไฟล์ไม่ถูกส่งมาให้เราอ่านหรือเก็บไว้<br />เมื่อทำเสร็จ อย่าลืมดาวน์โหลดงานเก็บไว้ก่อนปิดหน้านี้หรือโหลดหน้าใหม่</p></div></section>
+</main>
+<footer><span class="brand"><BrandLogo /></span><span>เครื่องมือเอกสาร ในที่เดียว</span></footer>
+@code {
+    private string Category = "all";
+    private IEnumerable<DocumentTool> VisibleTools => Category == "all" ? ToolCatalog.Tools : ToolCatalog.Tools.Where(t => t.Category == Category);
+}
