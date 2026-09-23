@@ -1,6 +1,6 @@
 # DocNory
 
-ศูนย์รวมเครื่องมือเอกสาร แบ่งหมวดแก้ไขและเซ็น, จัดการไฟล์ PDF, ลดขนาดไฟล์ และแปลงไฟล์ หน้าแรกกรองหมวดได้ กรอก/เซ็น รวม แยก PDF และแปลง PDF เป็น JPG พร้อมใช้งาน ส่วนลดขนาดและแปลง Word/PowerPoint/Excel ยังเป็น “เร็ว ๆ นี้”
+ศูนย์รวมเครื่องมือเอกสาร แบ่งหมวดแก้ไขและเซ็น, จัดการไฟล์ PDF, ลดขนาดไฟล์ และแปลงไฟล์ หน้าแรกกรองหมวดได้ กรอก/เซ็น รวม แยก PDF และแปลง PDF เป็น JPG / Word พร้อมใช้งาน ส่วนลดขนาด, Word เป็น PDF และแปลง PowerPoint/Excel ยังเป็น “เร็ว ๆ นี้”
 
 เว็บกรอกข้อความไทย–อังกฤษลง PDF ด้วย Blazor Web App (Static SSR + Interactive WebAssembly) และ TypeScript สำหรับ desktop เปิดไฟล์ใน browser โดยไม่อัปโหลดและไม่บันทึกร่าง รองรับหลายหน้า วาง/ย้ายข้อความ กรอบปรับพอดีกับเนื้อหาอัตโนมัติ ปรับขนาดตัวอักษรจากแถบขวา สี การจัดแนว Undo/Redo ลายเซ็นจากคอม/มือถือ และ preview จาก PDF ผลลัพธ์จริงก่อนดาวน์โหลด
 
@@ -45,6 +45,7 @@ POSTGRES_PASSWORD='your-local-password' docker compose -f infra/compose.yaml --p
 - `src/SabuySign.Host/`: ASP.NET Core host, Static SSR routing, SEO metadata, CSP และ sitemap
 - `src/SabuySign.Web/`: client assembly สำหรับ Interactive WebAssembly และ component ที่ใช้ render HTML ร่วมกับ host
 - `Features/Tools/`: หน้าแรกและ catalog เครื่องมือ/หมวดหมู่ แยกจาก editor สำหรับเพิ่มเครื่องมือในอนาคต
+- `Features/PdfToWord/` และ `Client/convert-word/`: สร้าง DOCX ที่มีข้อความแก้ไขได้; หน้าที่ไม่มีข้อความจะเป็นรูปพร้อมเตือนก่อนแปลง; OCR สำหรับสมาชิกแบบชำระเงินยังไม่เปิดใช้งาน
 - `Features/PdfToJpg/` และ `Client/convert-jpg/`: แปลงทุกหน้าเป็น JPG หรือดึงรูปภาพที่ฝังใน PDF; เลือกคุณภาพปกติ/สูง และดาวน์โหลด JPG หรือ ZIP โดยประมวลผลบนเครื่องผู้ใช้
 - `Shared/ConversionProgress.razor`, `Shared/ConversionResult.razor` และ `Client/shared/zip.ts`: ส่วนกลางสำหรับเครื่องมือแปลงไฟล์
 - `Features/PdfEditor/`: Blazor UI และ JS interop bridge
@@ -136,3 +137,9 @@ Limits: one source PDF, 25 MB, 100 source pages and 100 exported pages across
 all groups. Processing and file bytes stay in browser memory; reload clears the
 session. Form appearances are flattened; bookmarks and digital signatures are
 not retained. ZIP entries are stored without recompressing the PDF bytes.
+
+## PDF เป็น Word
+
+แปลงบน browser ด้วย PDF.js และ docx เป็น `.docx` จริง (ไม่ใช่ `.doc` รุ่นเก่า) รองรับข้อความไทย–อังกฤษ รูปภาพ raster ที่ฝังใน PDF และหลายไฟล์เป็น ZIP หน้าไม่มีข้อความที่ดึงได้จะเป็นรูปภาพใน Word โดยแจ้งก่อนแปลงและในผลลัพธ์ OCR แสดง “สำหรับสมาชิกแบบชำระเงิน · เร็ว ๆ นี้” ไม่มีการสมัคร/เรียกเก็บเงินในรุ่นนี้
+
+การแปลงนี้เน้นนำข้อความไปแก้ไขต่อ: เรียงบรรทัดตามตำแหน่งและวางรูปภาพต่อจากข้อความของแต่ละหน้า ไม่ได้คงเลย์เอาต์ PDF แบบตรงทุกตำแหน่ง ตาราง/คอลัมน์ไม่ถูกสร้างเป็น Word tables, ไม่รักษาสีหรือฟอนต์เดิม และไม่สร้างเส้น/กราฟิก vector เป็นวัตถุ Word ฟอนต์ Word ใช้ Sarabun หรือฟอนต์ทดแทนของเครื่องผู้ใช้ สแกนที่มี text layer อยู่แล้วจะใช้ข้อความนั้น; การตรวจหน้าไม่มีข้อความไม่รับรองว่าจะตรวจเจอทุกภาพสแกนในหน้าผสม

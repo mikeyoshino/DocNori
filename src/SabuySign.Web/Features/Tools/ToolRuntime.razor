@@ -3,11 +3,13 @@
 @using SabuySign.Web.Features.PdfSplit
 @using SabuySign.Web.Features.Signatures
 @using SabuySign.Web.Features.PdfToJpg
+@using SabuySign.Web.Features.PdfToWord
 @switch (ToolId)
 {
     case "fill-sign": <Editor /> break;
     case "merge": <Merge /> break;
     case "split": <Split /> break;
+    case "pdf-to-word": <ConvertWord /> break;
     case "pdf-to-jpg": <ConvertJpg /> break;
     case "sign": <MobileSign /> break;
 }

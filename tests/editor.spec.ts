@@ -158,7 +158,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
     page.getByRole("heading", { name: "จัดการเอกสาร ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
   await expect(page.locator(".document-tool")).toHaveCount(9);
-  await expect(page.locator(".document-tool.upcoming")).toHaveCount(5);
+  await expect(page.locator(".document-tool.upcoming")).toHaveCount(4);
   await page.getByRole("button", { name: "แปลงไฟล์", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "แปลงไฟล์", exact: true }),

@@ -1,0 +1,62 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>PDF เป็น Word — DocNory</PageTitle>
+<SiteNav />
+<main class="conversion-tool category-convert" @ref="Root">
+    <section data-intro class="tool-start tool-start-intro conversion-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="from-pdf" /></span>
+        <h1>PDF เป็น Word</h1>
+        <p>นำข้อความจาก PDF ไปแก้ไขต่อใน Word<br />เลือกไฟล์ แล้วดาวน์โหลดเป็น .docx ได้เลย</p>
+        <div data-drop class="tool-file-drop">
+            <Icon Name="upload" /><h2>เลือก PDF ที่ต้องการแปลงเป็น Word</h2>
+            <p>ลากไฟล์มาวางที่นี่ หรือเลือกจากเครื่องของคุณ</p>
+            <button data-choose class="button button-blue" disabled="@(!Ready)">เลือกไฟล์ PDF <Icon Name="arrow" /></button>
+            <span class="file-limits">1–20 ไฟล์ · ขนาดรวมไม่เกิน 25 MB / 100 หน้า</span>
+        </div>
+        <p class="tool-local-note"><Icon Name="lock" /> ไฟล์อยู่กับคุณ · ไม่ต้องสมัครสมาชิก</p>
+        <section class="conversion-intro-help"><h2>แปลง PDF เป็น Word ได้อย่างไร?</h2><p>เลือก PDF ที่มีข้อความ แล้วกดแปลงเป็น Word เพื่อดาวน์โหลดไฟล์ .docx หากเลือกหลายไฟล์จะดาวน์โหลดรวมเป็น ZIP หน้าสแกนจะเป็นรูปภาพใน Word จนกว่าจะใช้ OCR</p></section>
+    </section>
+    <input data-files type="file" accept="application/pdf,.pdf" multiple disabled="@(!Ready)" hidden />
+    <div data-workspace class="conversion-workspace" hidden>
+        <section data-stage class="conversion-stage" aria-label="ไฟล์ PDF ที่จะแปลง">
+            <div class="conversion-stage-heading"><h2>ไฟล์ที่เลือก</h2><span data-summary></span></div>
+            <div class="conversion-add"><FileSourcePicker Label="เพิ่มไฟล์ PDF" ShowCloudOptions="false" /></div>
+            <ul data-list class="conversion-files"></ul>
+            <p class="conversion-stage-note">ลากไฟล์ PDF เพิ่มมาวางในพื้นที่นี้ได้</p>
+        </section>
+        <aside class="conversion-sidebar" aria-labelledby="word-options-heading">
+            <h2 id="word-options-heading">ตัวเลือก PDF เป็น Word</h2>
+            <p data-scan-note class="conversion-scan-note" role="status" hidden></p>
+            <fieldset class="conversion-modes"><legend class="visually-hidden">วิธีแปลงเป็น Word</legend>
+                <label class="conversion-mode"><input type="radio" name="word-mode" value="normal" checked /><span><strong>แปลงแบบปกติ</strong><small>นำข้อความที่เลือกคัดลอกได้ใน PDF ไปแก้ไขต่อใน Word</small></span><span class="conversion-selected" aria-hidden="true">✓</span></label>
+                <label data-ocr-option class="conversion-mode conversion-mode-unavailable"><input data-ocr-input type="radio" name="word-mode" value="ocr" disabled aria-label="OCR สำหรับสมาชิกแบบชำระเงิน" /><span><strong>OCR <span class="conversion-premium">สำหรับสมาชิกแบบชำระเงิน</span></strong><small>อ่านข้อความจากภาพสแกนให้แก้ไขได้</small><span class="conversion-coming">เร็ว ๆ นี้</span></span><Icon Name="lock" /></label>
+            </fieldset>
+            <div class="conversion-settings-note"><p>ได้ไฟล์ .docx พร้อมข้อความและรูปภาพสำหรับแก้ไขต่อ รูปภาพจะแสดงต่อจากข้อความของแต่ละหน้า</p><p>รูปแบบตัวอักษร คอลัมน์ และตารางอาจต่างจากต้นฉบับ เส้นตารางและกราฟิกที่วาดใน PDF จะไม่ถูกแปลงเป็นวัตถุใน Word</p><p>ไฟล์ PDF ไม่ถูกส่งขึ้นเซิร์ฟเวอร์</p><button data-clear type="button" class="conversion-clear">ล้างรายการไฟล์</button></div>
+            <div data-footer class="conversion-footer"><button data-convert type="button" class="button button-blue">แปลงเป็น Word <Icon Name="arrow" /></button></div>
+        </aside>
+    </div>
+    <section data-scan-confirm class="conversion-scan-confirm" aria-labelledby="scan-confirm-title" hidden>
+        <div class="conversion-scan-card"><span class="tool-card-icon"><ToolArtwork Name="from-pdf" /></span><div><h1 id="scan-confirm-title">เอกสารนี้มีหน้าที่แก้ข้อความไม่ได้</h1><p>บางหน้าไม่มีข้อความให้ดึงออกมา เช่น หน้าสแกนหรือภาพถ่าย หากแปลงต่อ หน้านั้นจะเป็นรูปภาพใน Word ส่วนหน้าที่มีข้อความยังแก้ไขได้ตามปกติ</p><p>OCR จะช่วยอ่านข้อความจากภาพให้แก้ไขได้ <strong>สำหรับสมาชิกแบบชำระเงิน · เร็ว ๆ นี้</strong></p><div class="conversion-confirm-actions"><button data-return-options type="button" class="button button-quiet">กลับไปเลือกตัวเลือก</button><button data-continue type="button" class="button button-blue">แปลงต่อโดยไม่ใช้ OCR</button></div></div></div>
+    </section>
+    <ConversionProgress Title="กำลังแปลง PDF เป็น Word…" />
+    <ConversionResult Title="แปลงเป็น Word เรียบร้อยแล้ว" />
+    <div data-feedback class="conversion-feedback"><p data-status role="status" aria-live="polite"></p><p data-error class="merge-error" role="alert" hidden></p></div>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/convert-word.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

@@ -28,3 +28,5 @@ No commercial PDF SDK is used. Review license obligations again when changing de
 - QR Code (`qrcode` 1.5.4, MIT) and `dijkstrajs` (MIT): client-side QR generation. Full licenses are distributed under `/js/licenses/`.
 
 - `perfect-freehand` 1.2.3 (MIT, Steve Ruiz): local pen outline generation with mouse stabilization and simulated pressure. License is distributed under `/js/licenses/perfect-freehand/`.
+
+- `docx` 9.7.1 (MIT): local DOCX generation. Its bundled runtime dependencies include JSZip (MIT or GPL-3.0-or-later, used under MIT), xml, xml-js, sax, nanoid, hash.js and stream helpers; full notices are copied to `/js/licenses/`. No document is sent to a conversion service.

@@ -490,3 +490,98 @@
     --conversion-nav-height: 73px;
   }
 }
+.conversion-scan-note {
+  margin: 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  color: #195477;
+  background: #eaf6fd;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.conversion-mode-unavailable {
+  cursor: not-allowed;
+  background: #fafbfd;
+}
+.conversion-premium {
+  display: block;
+  width: fit-content;
+  margin-top: 7px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  color: #725419;
+  background: #fff2ce;
+  font-size: 11px;
+  font-weight: 600;
+}
+.conversion-coming {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.conversion-mode-unavailable > .icon {
+  width: 19px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.conversion-scan-confirm {
+  min-height: calc(100dvh - var(--conversion-nav-height));
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+  background: #f4f6fb;
+}
+.conversion-scan-card {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  width: min(850px, 100%);
+  padding: 48px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 18px;
+}
+.conversion-scan-card > .tool-card-icon {
+  flex: 0 0 110px;
+  width: 110px;
+  height: 110px;
+}
+.conversion-scan-card h1 {
+  font-size: 26px;
+  margin: 0 0 16px;
+}
+.conversion-scan-card p {
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 0 0 16px;
+}
+.conversion-scan-card p strong {
+  font-weight: 500;
+}
+.conversion-confirm-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+@media (max-width: 650px) {
+  .conversion-scan-card {
+    display: block;
+    padding: 28px 22px;
+  }
+  .conversion-scan-card > .tool-card-icon {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 24px;
+  }
+  .conversion-scan-card h1 {
+    font-size: 23px;
+  }
+  .conversion-confirm-actions {
+    flex-direction: column;
+  }
+  .conversion-confirm-actions .button {
+    width: 100%;
+  }
+}
