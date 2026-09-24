@@ -41,7 +41,10 @@ test("desktop save, reusable placement, proportional resize, undo and vector PDF
   });
   await openPdf(page);
   await page.getByRole("button", { name: "สร้างลายเซ็น", exact: true }).click();
-  await page.getByRole("button", { name: "สร้างบนคอม" }).click();
+  await page
+    .locator("#signature-source")
+    .getByRole("button", { name: "สร้างลายเซ็น", exact: true })
+    .click();
   await expect(page.locator("#desktop-save")).toBeDisabled();
   await draw(page, "#desktop-pad");
   await page.locator("#desktop-save").click();
@@ -105,7 +108,9 @@ test("QR phone saves encrypted ink to desktop once; PDF stays local; cancellatio
   test.skip(!process.env.APP_URL, "Phone relay runs with Docker Compose");
   await openPdf(page);
   await page.getByRole("button", { name: "สร้างลายเซ็น", exact: true }).click();
-  await page.getByRole("button", { name: "สร้างบนมือถือ" }).click();
+  await page
+    .getByRole("button", { name: "ใช้มือถือเซ็น", exact: true })
+    .click();
   const link = page.locator("#pair-link");
   await expect(link).toBeVisible();
   const url = (await link.getAttribute("href"))!;
@@ -147,7 +152,9 @@ test("QR phone saves encrypted ink to desktop once; PDF stays local; cancellatio
   await phone.reload();
   await expect(phone.locator("#mobile-status")).toContainText("ลิงก์ไม่ครบ");
   await page.getByRole("button", { name: "สร้างลายเซ็น", exact: true }).click();
-  await page.getByRole("button", { name: "สร้างบนมือถือ" }).click();
+  await page
+    .getByRole("button", { name: "ใช้มือถือเซ็น", exact: true })
+    .click();
   await expect(link).toBeVisible();
   const old = (await link.getAttribute("href"))!;
   const cancelled = page.waitForResponse(
@@ -169,7 +176,9 @@ test("late acknowledgement cannot cancel a replacement QR", async ({
     await import("../src/SabuySign.Web/Client/signatures/crypto.ts");
   await openPdf(page);
   await page.getByRole("button", { name: "สร้างลายเซ็น", exact: true }).click();
-  await page.getByRole("button", { name: "สร้างบนมือถือ" }).click();
+  await page
+    .getByRole("button", { name: "ใช้มือถือเซ็น", exact: true })
+    .click();
   const link = page.locator("#pair-link");
   await expect(link).toBeVisible();
   const url = (await link.getAttribute("href"))!;

@@ -1,3 +1,4 @@
+import { markLines } from "./marks";
 import { penPath } from "../signatures/pen";
 import { inkPath } from "../signatures/curves";
 import fontkit from "@pdf-lib/fontkit";
@@ -122,9 +123,12 @@ export async function exportPdf(
 ): Promise<Uint8Array> {
   const doc = await validatePdf(bytes);
   if (!items.length) return bytes.slice();
-  const textItems = items.filter((i) => !i.signature);
+  const textItems = items.filter((i) => !i.signature && !i.mark);
   if (!textItems.length) {
-    for (const item of items) drawSignature(doc.getPages()[item.page], item);
+    for (const item of items) {
+      if (item.mark) drawMark(doc.getPages()[item.page], item);
+      else drawSignature(doc.getPages()[item.page], item);
+    }
     return doc.save();
   }
   const linesOf = (text: string) =>
@@ -141,6 +145,10 @@ export async function exportPdf(
   for (const item of items) {
     const page = doc.getPages()[item.page];
     if (!page) throw new Error("ไม่พบหน้าเอกสาร");
+    if (item.mark) {
+      drawMark(page, item);
+      continue;
+    }
     if (item.signature) {
       drawSignature(page, item);
       continue;
@@ -274,6 +282,53 @@ function drawSignature(page: PDFPage, item: TextItem) {
     }
     if (data.brush === "pen") page.pushOperators(closePath(), fill());
     else page.pushOperators(stroke());
+  }
+  page.pushOperators(popGraphicsState());
+}
+
+function drawMark(page: PDFPage, item: TextItem) {
+  if (!page || !item.mark) throw new Error("ไม่พบเครื่องหมายหรือหน้าเอกสาร");
+  const crop = visibleCrop(page),
+    rotation = page.getRotation().angle;
+  const unit = page.node.get(PDFName.of("UserUnit"));
+  const u =
+    unit && "asNumber" in unit
+      ? (unit as { asNumber(): number }).asNumber()
+      : 1;
+  const rotated = Math.abs(rotation % 180) === 90;
+  const w = (rotated ? crop.height : crop.width) * u,
+    h = (rotated ? crop.width : crop.height) * u;
+  if (
+    ![item.x, item.y, item.width, item.height].every(Number.isFinite) ||
+    item.x < 0 ||
+    item.y < 0 ||
+    item.width <= 0 ||
+    item.height <= 0 ||
+    item.x + item.width > w + 0.1 ||
+    item.y + item.height > h + 0.1
+  )
+    throw new Error("เครื่องหมายเกินขอบหน้า กรุณาย้ายเครื่องหมายก่อนดาวน์โหลด");
+  const point = (x: number, y: number) =>
+    pagePoint(
+      crop,
+      rotation,
+      (item.x + (x * item.width) / 24) / u,
+      (item.y + (y * item.height) / 24) / u,
+    );
+  const rgb = item.color
+    .match(/[a-f0-9]{2}/gi)
+    ?.map((c) => parseInt(c, 16) / 255) ?? [0, 0, 0];
+  page.pushOperators(
+    pushGraphicsState(),
+    setStrokingRgbColor(rgb[0], rgb[1], rgb[2]),
+    setLineCap(LineCapStyle.Round),
+    setLineJoin(LineJoinStyle.Round),
+    setLineWidth((2.3 * item.width) / 24 / u),
+  );
+  for (const line of markLines(item.mark)) {
+    page.pushOperators(moveTo(...point(...line[0])));
+    for (const p of line.slice(1)) page.pushOperators(lineTo(...point(...p)));
+    page.pushOperators(stroke());
   }
   page.pushOperators(popGraphicsState());
 }

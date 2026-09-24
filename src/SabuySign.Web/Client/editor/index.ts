@@ -1,3 +1,5 @@
+import { installGestureZoom } from "./gesture-zoom";
+import { isMark, markSvg, type MarkKind } from "./marks";
 import {
   getDocument,
   GlobalWorkerOptions,
@@ -41,6 +43,11 @@ let pageNumber = 1,
   width = 595,
   height = 842,
   downloadedRevision = -1;
+let markKind: MarkKind = "check",
+  markSize = 24,
+  markColor = "#172c40",
+  continuous = true,
+  fitZoom = true;
 let renderTask: RenderTask | null = null,
   renderGeneration = 0,
   previewTask: PDFDocumentLoadingTask | null = null,
@@ -71,10 +78,20 @@ async function notify() {
     page: pageNumber,
     count: session.items.length,
     zoom,
+    fitZoom,
+    markKind,
+    markSize,
+    markColor,
+    continuous,
     canUndo: session.canUndo,
     canRedo: session.canRedo,
     selected: selected
-      ? { ...selected, signature: undefined, isSignature: !!selected.signature }
+      ? {
+          ...selected,
+          signature: undefined,
+          isSignature: !!selected.signature,
+          isMark: !!selected.mark,
+        }
       : null,
   });
 }
@@ -88,10 +105,33 @@ async function report(e: unknown) {
   error = friendly(e);
   await notify();
 }
+let resetGestureZoom: (() => void) | undefined;
 export async function init(ref: Bridge) {
   bridge = ref;
   lifetime = new AbortController();
   const { signal } = lifetime;
+  const workspace = document.querySelector<HTMLElement>(".workspace")!;
+  resetGestureZoom = installGestureZoom(
+    workspace,
+    signal,
+    () => !!doc && !busy && !document.querySelector("dialog[open]"),
+    async (factor, clientX, clientY) => {
+      const surface = $("page-surface");
+      const before = surface.getBoundingClientRect();
+      const pointX = (clientX - before.left) / zoom;
+      const pointY = (clientY - before.top) / zoom;
+      zoom = Math.max(0.1, Math.min(4, zoom * factor));
+      fitZoom = false;
+      await renderPage(() => {
+        const after = surface.getBoundingClientRect();
+        workspace.scrollLeft += after.left + pointX * zoom - clientX;
+        workspace.scrollTop += after.top + pointY * zoom - clientY;
+      });
+      await notify();
+    },
+    report,
+  );
+
   signatures = new Signatures((id) => {
     if (busy || !doc) return;
     tool = `signature:${id}`;
@@ -159,6 +199,32 @@ export async function init(ref: Bridge) {
       if (busy || (e.target as HTMLElement).closest(".text-object")) return;
       if (tool.startsWith("signature:")) {
         placeSignature(tool.slice(10), e.clientX, e.clientY);
+      } else if (tool === "mark") {
+        const rect = $("page-surface").getBoundingClientRect();
+        session.addMark(
+          pageNumber - 1,
+          Math.max(
+            0,
+            Math.min(
+              width - markSize,
+              (e.clientX - rect.left) / zoom - markSize / 2,
+            ),
+          ),
+          Math.max(
+            0,
+            Math.min(
+              height - markSize,
+              (e.clientY - rect.top) / zoom - markSize / 2,
+            ),
+          ),
+          markKind,
+          markSize,
+          markColor,
+        );
+        if (matchMedia("(max-width: 700px)").matches || !continuous)
+          tool = "select";
+        else session.selected = null;
+        changed();
       } else if (tool === "text") {
         const rect = $("page-surface").getBoundingClientRect();
         session.add(
@@ -253,6 +319,36 @@ export async function init(ref: Bridge) {
     },
     { signal },
   );
+  window.addEventListener(
+    "resize",
+    () => {
+      if (doc && fitZoom && !busy) void renderPage().then(notify).catch(report);
+    },
+    { signal },
+  );
+  $("page-surface").addEventListener(
+    "pointermove",
+    (e) => {
+      const ghost = $("mark-ghost");
+      if (!ghost) return;
+      ghost.hidden =
+        tool !== "mark" ||
+        !!(e.target as HTMLElement).closest(".text-object") ||
+        e.pointerType === "touch";
+      const r = $("page-surface").getBoundingClientRect();
+      ghost.style.left = `${Math.max(0, Math.min(width - markSize, (e.clientX - r.left) / zoom - markSize / 2)) * zoom}px`;
+      ghost.style.top = `${Math.max(0, Math.min(height - markSize, (e.clientY - r.top) / zoom - markSize / 2)) * zoom}px`;
+    },
+    { signal },
+  );
+  $("page-surface").addEventListener(
+    "pointerleave",
+    () => {
+      const ghost = $("mark-ghost");
+      if (ghost) ghost.hidden = true;
+    },
+    { signal },
+  );
   await notify();
 }
 export function pick() {
@@ -294,6 +390,12 @@ async function openFile(file: File) {
     session = new Session(layoutTextItem);
     pageNumber = 1;
     zoom = 1;
+    fitZoom = true;
+    tool = "select";
+    markKind = "check";
+    markSize = 24;
+    markColor = "#172c40";
+    continuous = true;
     downloadedRevision = -1;
     await notify();
     await frame();
@@ -307,7 +409,7 @@ async function openFile(file: File) {
     await notify();
   }
 }
-async function renderPage() {
+async function renderPage(onLayout?: () => void) {
   if (!doc) return;
   const generation = ++renderGeneration;
   renderTask?.cancel();
@@ -316,6 +418,20 @@ async function renderPage() {
   const unit = page.getViewport({ scale: 1 });
   width = unit.width;
   height = unit.height;
+  if (fitZoom) {
+    const workspace = document.querySelector<HTMLElement>(".workspace")!;
+    const style = getComputedStyle(workspace);
+    zoom = Math.min(
+      1.16,
+      Math.max(
+        0.05,
+        (workspace.clientWidth -
+          parseFloat(style.paddingLeft) -
+          parseFloat(style.paddingRight)) /
+          width,
+      ),
+    );
+  }
   const viewport = page.getViewport({ scale: zoom });
   const surface = $("page-surface");
   surface.style.width = `${viewport.width}px`;
@@ -331,6 +447,7 @@ async function renderPage() {
   canvas.style.width = `${viewport.width}px`;
   canvas.style.height = `${viewport.height}px`;
   renderObjects();
+  onLayout?.();
   renderTask = page.render({
     canvas,
     viewport,
@@ -448,6 +565,7 @@ function renderObjects() {
     el.className = `text-object ${item.id === session.selected ? "selected" : ""}`;
     el.dataset.id = item.id;
     if (item.signature) el.classList.add("signature-object");
+    if (item.mark) el.classList.add("mark-object");
     Object.assign(el.style, {
       left: `${item.x * zoom}px`,
       top: `${item.y * zoom}px`,
@@ -457,15 +575,19 @@ function renderObjects() {
     const actions = document.createElement("div");
     actions.className = "object-actions";
     if (item.y * zoom < 36) actions.classList.add("below");
-    actions.style.left = `${Math.min(0, (width - item.x) * zoom - 68)}px`;
+    actions.style.left = `${Math.min(0, (width - item.x) * zoom - (item.mark ? 144 : 68))}px`;
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "object-delete";
     remove.setAttribute(
       "aria-label",
-      item.signature ? "ลบลายเซ็น" : "ลบข้อความ",
+      item.mark ? "ลบเครื่องหมาย" : item.signature ? "ลบลายเซ็น" : "ลบข้อความ",
     );
-    remove.title = item.signature ? "ลบลายเซ็น" : "ลบข้อความ";
+    remove.title = item.mark
+      ? "ลบเครื่องหมาย"
+      : item.signature
+        ? "ลบลายเซ็น"
+        : "ลบข้อความ";
     remove.innerHTML =
       '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>';
     remove.onpointerdown = (e) => e.stopPropagation();
@@ -484,10 +606,31 @@ function renderObjects() {
     handle.textContent = "⋮⋮";
     handle.setAttribute(
       "aria-label",
-      item.signature ? "ลากเพื่อย้ายลายเซ็น" : "ลากเพื่อย้ายข้อความ",
+      item.mark
+        ? "ลากเพื่อย้ายเครื่องหมาย"
+        : item.signature
+          ? "ลากเพื่อย้ายลายเซ็น"
+          : "ลากเพื่อย้ายข้อความ",
     );
     handle.title = "ลากเพื่อย้าย · ใช้ปุ่มลูกศรเพื่อขยับ";
-    actions.append(handle, remove);
+    if (item.mark) {
+      handle.innerHTML =
+        '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2v20M2 12h20m-14-6 4-4 4 4M8 18l4 4 4-4M6 8l-4 4 4 4m12-8 4 4-4 4"/></svg>';
+      const copy = document.createElement("button");
+      copy.className = "object-copy";
+      copy.type = "button";
+      copy.setAttribute("aria-label", "ทำสำเนาเครื่องหมาย");
+      copy.innerHTML =
+        '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V3H3v13h5"/></svg>';
+      copy.onpointerdown = (e) => e.stopPropagation();
+      copy.onclick = (e) => {
+        e.stopPropagation();
+        if (busy) return;
+        session.duplicate(item.id, width, height);
+        changed();
+      };
+      actions.append(handle, copy, remove);
+    } else actions.append(handle, remove);
     const text = document.createElement("textarea");
     text.value = item.text;
     text.spellcheck = false;
@@ -524,7 +667,7 @@ function renderObjects() {
       el.style.left = `${item.x * zoom}px`;
       el.style.top = `${item.y * zoom}px`;
       actions.classList.toggle("below", item.y * zoom < 36);
-      actions.style.left = `${Math.min(0, (width - item.x) * zoom - 68)}px`;
+      actions.style.left = `${Math.min(0, (width - item.x) * zoom - (item.mark ? 144 : 68))}px`;
       el.style.width = `${item.width * zoom}px`;
       el.style.height = `${item.height * zoom}px`;
       text.scrollTop = 0;
@@ -596,7 +739,26 @@ function renderObjects() {
         node.onpointerup = finish;
         node.onpointercancel = finish;
       };
-    if (item.signature) {
+    if (item.mark) {
+      const mark = document.createElement("button");
+      mark.className = "mark-visual";
+      mark.type = "button";
+      mark.setAttribute("aria-label", "เลือกเครื่องหมาย");
+      mark.innerHTML = markSvg(item.mark);
+      mark.style.color = item.color;
+      mark.onclick = (e) => {
+        e.stopPropagation();
+        if (busy) return;
+        session.selected = item.id;
+        markKind = item.mark!;
+        markSize = item.size;
+        markColor = item.color;
+        tool = "select";
+        renderObjects();
+        void notify();
+      };
+      el.append(actions, mark);
+    } else if (item.signature) {
       const img = document.createElement("img");
       img.src = `data:image/svg+xml,${encodeURIComponent(signatureSvg(item.signature))}`;
       img.alt = "ลายเซ็นบนเอกสาร";
@@ -610,10 +772,20 @@ function renderObjects() {
     } else el.append(actions, text);
     root.append(el);
   }
+  if (tool === "mark") {
+    const ghost = document.createElement("div");
+    ghost.id = "mark-ghost";
+    ghost.hidden = true;
+    ghost.innerHTML = markSvg(markKind);
+    ghost.style.width = ghost.style.height = `${markSize * zoom}px`;
+    ghost.style.color = markColor;
+    root.append(ghost);
+  }
 }
 export async function patch(key: string, value: string) {
   if (busy || !session.selected) return;
   const item = session.items.find((i) => i.id === session.selected)!;
+  if (item.mark) return;
   if (item.signature) {
     if (!["width", "height"].includes(key)) return;
     const n = Number(value);
@@ -726,11 +898,60 @@ export async function command(action: string, value?: string) {
   if (busy && action !== "clearError") return;
   try {
     switch (action) {
+      case "markKind":
+      case "markSize":
+      case "markColor": {
+        const selected = session.items.find(
+          (i) => i.id === session.selected && i.mark,
+        );
+        if (action === "markKind" && value && isMark(value)) markKind = value;
+        if (action === "markSize" && Number.isFinite(Number(value)))
+          markSize = Math.max(14, Math.min(48, Number(value)));
+        if (action === "markColor" && value && /^#[a-f0-9]{6}$/i.test(value))
+          markColor = value;
+        if (selected) {
+          const size = action === "markSize" ? markSize : selected.size;
+          session.update(selected.id, {
+            mark: action === "markKind" ? markKind : selected.mark,
+            color: action === "markColor" ? markColor : selected.color,
+            size,
+            width: size,
+            height: size,
+            x: Math.max(
+              0,
+              Math.min(selected.x + (selected.width - size) / 2, width - size),
+            ),
+            y: Math.max(
+              0,
+              Math.min(
+                selected.y + (selected.height - size) / 2,
+                height - size,
+              ),
+            ),
+          });
+        }
+        changed();
+        break;
+      }
+      case "finishMark":
+        session.selected = null;
+        tool = "select";
+        renderObjects();
+        break;
+      case "continuous":
+        continuous = value === "true";
+        break;
+      case "duplicate":
+        if (session.selected)
+          session.duplicate(session.selected, width, height);
+        changed();
+        break;
       case "signature":
         if (doc) signatures.create();
         break;
       case "tool":
         tool = value ?? "select";
+        if (tool !== "select") session.selected = null;
         renderObjects();
         break;
       case "undo":
@@ -745,7 +966,16 @@ export async function command(action: string, value?: string) {
         if (session.selected) session.remove(session.selected);
         changed();
         break;
+      case "page":
+        pageNumber = Math.max(
+          1,
+          Math.min(doc?.numPages ?? 1, Math.floor(Number(value) || 1)),
+        );
+        session.selected = null;
+        await renderPage();
+        break;
       case "zoom":
+        fitZoom = value === "fit";
         zoom = Number(value) || 1;
         await renderPage();
         break;
@@ -805,6 +1035,7 @@ export async function command(action: string, value?: string) {
   }
 }
 async function releaseDocument() {
+  resetGestureZoom?.();
   signatures?.reset();
   renderGeneration++;
   renderTask?.cancel();

@@ -1,6 +1,8 @@
+import type { MarkKind } from "./marks";
 import type { SignatureData } from "../signatures/data";
 export interface TextItem {
   signature?: SignatureData;
+  mark?: MarkKind;
   id: string;
   page: number;
   x: number;
@@ -16,6 +18,7 @@ export class Session {
   constructor(
     private readonly fitText: (item: TextItem) => TextItem = (item) => item,
   ) {}
+  private textSize = 16;
   private current: TextItem[] = [];
   private past: TextItem[][] = [];
   private future: TextItem[][] = [];
@@ -34,7 +37,7 @@ export class Session {
     this.past.push(this.current);
     if (this.past.length > 100) this.past.shift();
     this.current = items.map((item) =>
-      item.signature ? item : this.fitText(item),
+      item.signature || item.mark ? item : this.fitText(item),
     );
     this.future = [];
     this.revision++;
@@ -51,7 +54,7 @@ export class Session {
         width: 220,
         height: 54,
         text: "ข้อความ",
-        size: 16,
+        size: this.textSize,
         color: "#172433",
         align: "left",
       },
@@ -61,6 +64,13 @@ export class Session {
   update(id: string, patch: Partial<TextItem>) {
     const old = this.current.find((i) => i.id === id);
     if (!old) return;
+    if (
+      !old.mark &&
+      !old.signature &&
+      patch.size !== undefined &&
+      Number.isFinite(patch.size)
+    )
+      this.textSize = Math.max(8, Math.min(72, patch.size));
     const next = { ...old, ...patch, id };
     if (JSON.stringify(old) === JSON.stringify(next)) return;
     this.commit(this.current.map((i) => (i.id === id ? next : i)));
@@ -91,6 +101,45 @@ export class Session {
       },
     ]);
     this.selected = id;
+  }
+  addMark(
+    page: number,
+    x: number,
+    y: number,
+    mark: MarkKind,
+    size: number,
+    color: string,
+  ) {
+    const id = crypto.randomUUID();
+    this.commit([
+      ...this.current,
+      {
+        id,
+        page,
+        x,
+        y,
+        mark,
+        size,
+        color,
+        width: size,
+        height: size,
+        text: "",
+        align: "left",
+      },
+    ]);
+    this.selected = id;
+  }
+  duplicate(id: string, pageWidth: number, pageHeight: number) {
+    const source = this.current.find((i) => i.id === id);
+    if (!source) return;
+    const copy = {
+      ...structuredClone(source),
+      id: crypto.randomUUID(),
+      x: Math.max(0, Math.min(pageWidth - source.width, source.x + 16)),
+      y: Math.max(0, Math.min(pageHeight - source.height, source.y + 16)),
+    };
+    this.commit([...this.current, copy]);
+    this.selected = copy.id;
   }
   remove(id: string) {
     if (!this.current.some((i) => i.id === id)) return;

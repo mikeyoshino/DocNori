@@ -52,3 +52,15 @@ test("a saved signature can be placed twice and undone independently", () => {
   s.redo();
   assert.deepEqual(s.items[1].signature, ink);
 });
+
+test("new text remembers last text size, independent of marks and new sessions", () => {
+  const session = new Session();
+  session.add(0, 10, 20);
+  session.update(session.selected!, { size: 28 });
+  session.addMark(0, 50, 50, "check", 40, "#172c40");
+  session.add(0, 100, 100);
+  assert.equal(session.items.at(-1)!.size, 28);
+  const fresh = new Session();
+  fresh.add(0, 0, 0);
+  assert.equal(fresh.items[0].size, 16);
+});

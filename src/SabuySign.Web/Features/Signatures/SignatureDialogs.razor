@@ -1,11 +1,27 @@
-<dialog id="signature-source" class="signature-dialog" aria-labelledby="signature-title">
-    <div class="signature-heading"><div><span class="eyebrow">ลายเซ็นของคุณ</span><h2 id="signature-title">เลือกว่าอยากเซ็นที่ไหน</h2></div><button class="tool" data-close-signature aria-label="ปิดหน้าลายเซ็น">×</button></div>
-    <div class="signature-choices"><button id="sign-desktop" class="signature-choice"><strong>สร้างบนคอม</strong><span>ใช้เมาส์หรือปากกาวาดลายเซ็น<br />แล้วกดบันทึก</span></button><button id="sign-phone" class="signature-choice"><strong>สร้างบนมือถือ</strong><span>สแกน QR แล้วใช้นิ้วเซ็น<br />บนหน้าจอโทรศัพท์</span></button></div>
-    <p class="field-help">ลายเซ็นอยู่ในหน้านี้ชั่วคราว ไม่เก็บในบัญชี<br />ปิดหรือรีเฟรชหน้าแล้วจะหาย</p>
+<dialog id="signature-source" class="signature-dialog signature-source-dialog" aria-labelledby="signature-title" aria-describedby="signature-source-description">
+    <div class="signature-heading">
+        <div><h2 id="signature-title">เพิ่มลายเซ็น</h2><p id="signature-source-description">เลือกวิธีสร้างลายเซ็น แล้วนำไปวางบนเอกสาร</p></div>
+        <button class="tool signature-close" data-close-signature aria-label="ปิดหน้าลายเซ็น"><Icon Name="close" /></button>
+    </div>
+    <div class="signature-choices">
+        <button id="sign-desktop" class="signature-choice" aria-labelledby="signature-draw-label" aria-describedby="signature-draw-description">
+            <span class="signature-choice-icon"><Icon Name="pen" /></span>
+            <strong id="signature-draw-label">สร้างลายเซ็น</strong>
+            <span id="signature-draw-description" class="signature-choice-description">วาดด้วยเมาส์ ปากกา หรือนิ้ว<br />บนอุปกรณ์ที่ใช้อยู่</span>
+            <span class="signature-choice-action">เริ่มวาด <Icon Name="arrow" /></span>
+        </button>
+        <button id="sign-phone" class="signature-choice" aria-labelledby="signature-mobile-label" aria-describedby="signature-mobile-description">
+            <span class="signature-choice-icon"><Icon Name="phone" /></span>
+            <strong id="signature-mobile-label">ใช้มือถือเซ็น</strong>
+            <span id="signature-mobile-description" class="signature-choice-description">สแกน QR Code ด้วยมือถือ<br />แล้วใช้นิ้ววาดบนหน้าจอ</span>
+            <span class="signature-choice-action">เปิด QR Code <Icon Name="arrow" /></span>
+        </button>
+    </div>
+    <div class="signature-source-note"><Icon Name="lock" /><p>ลายเซ็นใช้ได้จนกว่าจะปิดหน้านี้<br /><span>วางลายเซ็นและดาวน์โหลดเอกสารก่อนปิดหรือรีเฟรชหน้า</span></p></div>
 </dialog>
 <dialog id="signature-desktop" class="signature-dialog" aria-labelledby="desktop-sign-title">
-    <div class="signature-heading"><div><span class="eyebrow">สร้างบนคอม</span><h2 id="desktop-sign-title">เขียนลายเซ็นของคุณ</h2></div><button class="tool" data-close-signature aria-label="ปิดหน้าวาดลายเซ็น">×</button></div>
-    <div class="signature-pad"><canvas id="desktop-pad" aria-label="พื้นที่วาดลายเซ็นบนคอม"></canvas><span>เซ็นในพื้นที่นี้</span></div>
+    <div class="signature-heading"><div><span class="eyebrow">สร้างลายเซ็น</span><h2 id="desktop-sign-title">เขียนลายเซ็นของคุณ</h2></div><button class="tool" data-close-signature aria-label="ปิดหน้าวาดลายเซ็น">×</button></div>
+    <div class="signature-pad"><canvas id="desktop-pad" aria-label="พื้นที่วาดลายเซ็น"></canvas><span>เซ็นในพื้นที่นี้</span></div>
     <p id="desktop-sign-error" role="alert"></p>
     <div class="signature-actions"><button id="desktop-undo" class="button button-quiet">ย้อนเส้นล่าสุด</button><button id="desktop-clear" class="button button-quiet">ล้างลายเซ็น</button><button id="desktop-save" class="button button-blue" disabled>บันทึกลายเซ็น</button></div>
     <p class="field-help">บันทึกแล้วลากลายเซ็นจากแถบขวาไปวางบน PDF ได้</p>

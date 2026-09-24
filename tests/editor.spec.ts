@@ -100,6 +100,7 @@ test("drag, zoom, font size, page navigation and invalid file preserve current w
   await page.locator("#page-surface").click({ position: { x: 80, y: 150 } });
   await page.getByLabel("ข้อความที่เลือก").fill("กำ น้ำ ทำ น้ำ สมชาย");
   await page.getByLabel("ข้อความที่เลือก").blur();
+  await page.getByLabel("ระดับซูม", { exact: true }).selectOption("1");
   const before = await page.locator(".text-object").boundingBox();
   const handle = await page.getByLabel("ลากเพื่อย้ายข้อความ").boundingBox();
   await page.mouse.move(handle!.x + 8, handle!.y + 8);
@@ -109,7 +110,7 @@ test("drag, zoom, font size, page navigation and invalid file preserve current w
   const after = await page.locator(".text-object").boundingBox();
   expect(after!.x - before!.x).toBeCloseTo(60, 0);
   expect(after!.y - before!.y).toBeCloseTo(30, 0);
-  await page.getByLabel("ระดับซูม").selectOption("1.5");
+  await page.getByLabel("ระดับซูม", { exact: true }).selectOption("1.5");
   await expect
     .poll(async () => (await page.locator(".text-object").boundingBox())!.width)
     .toBeCloseTo(after!.width * 1.5, 0);
@@ -135,7 +136,7 @@ test("drag, zoom, font size, page navigation and invalid file preserve current w
     "กำ น้ำ ทำ น้ำ สมชาย",
   );
   await page.getByLabel("ปิดข้อความแจ้งเตือน").click();
-  await page.getByLabel("ระดับซูม").selectOption("1");
+  await page.getByLabel("ระดับซูม", { exact: true }).selectOption("1");
   await page.screenshot({ path: "artifacts/editor.png", fullPage: true });
   await page
     .getByRole("button", { name: "ดูตัวอย่าง PDF", exact: true })

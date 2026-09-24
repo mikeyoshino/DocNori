@@ -1,0 +1,12 @@
+<div class="mark-choices" role="group" aria-label="รูปแบบเครื่องหมาย">
+    @foreach (var option in Options)
+    {
+        <button class="@(Value == option.Kind ? "active" : "")" aria-pressed="@(Value == option.Kind ? "true" : "false")" disabled="@Disabled" @onclick="() => OnChange.InvokeAsync(option.Kind)"><Icon Name="@option.Kind" /><span>@option.Label</span></button>
+    }
+</div>
+@code {
+    [Parameter] public string Value { get; set; } = "check";
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback<string> OnChange { get; set; }
+    private static readonly (string Kind, string Label)[] Options = [("check", "ติ๊กถูก"), ("cross", "กากบาท"), ("circle", "วงกลม")];
+}
