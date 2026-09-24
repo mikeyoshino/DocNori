@@ -18,6 +18,11 @@ services:
   host:
     image: ${DOCNORY_HOST_IMAGE:?Set an immutable DocNory host image digest}
     restart: unless-stopped
+    env_file:
+      - /etc/docnory/signing.env
+    depends_on:
+      signing-db:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       PublicOrigin: ${DOCNORY_PUBLIC_ORIGIN:?Set the public HTTPS origin}
@@ -33,6 +38,27 @@ services:
     mem_limit: 256m
     networks:
       - backend
+
+  signing-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    env_file:
+      - /etc/docnory/signing.env
+    environment:
+      POSTGRES_DB: docnori_signing
+      POSTGRES_USER: docnori_signing
+    volumes:
+      - signing-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U docnori_signing -d docnori_signing"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  signing-data:
 
 networks:
   backend:

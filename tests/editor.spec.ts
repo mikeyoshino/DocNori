@@ -104,10 +104,12 @@ test("drag, zoom, font size, page navigation and invalid file preserve current w
   await page.getByLabel("ข้อความที่เลือก").blur();
   await chooseDropdown(page, "ระดับซูม", "1");
   const before = await page.locator(".text-object").boundingBox();
-  const handle = await page.getByLabel("ลากเพื่อย้ายข้อความ").boundingBox();
-  await page.mouse.move(handle!.x + 8, handle!.y + 8);
+  await expect(page.getByLabel("ลากเพื่อย้ายข้อความ")).toHaveCount(0);
+  await page.mouse.move(before!.x + 30, before!.y + before!.height / 2);
   await page.mouse.down();
-  await page.mouse.move(handle!.x + 68, handle!.y + 38);
+  await page.mouse.move(before!.x + 90, before!.y + before!.height / 2 + 30, {
+    steps: 8,
+  });
   await page.mouse.up();
   const after = await page.locator(".text-object").boundingBox();
   expect(after!.x - before!.x).toBeCloseTo(60, 0);
@@ -206,10 +208,11 @@ test("typing directly then dragging preserves text and warns before losing edits
     .click();
   await page.locator("#page-surface").click({ position: { x: 100, y: 150 } });
   await page.locator(".text-object textarea").fill("น้ำ กำ สมชาย");
-  const h = await page.getByLabel("ลากเพื่อย้ายข้อความ").boundingBox();
-  await page.mouse.move(h!.x + 5, h!.y + 5);
+  await page.locator(".workspace-caption").click();
+  const box = (await page.locator(".text-object").boundingBox())!;
+  await page.mouse.move(box.x + 24, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(h!.x + 25, h!.y + 30);
+  await page.mouse.move(box.x + 44, box.y + box.height / 2 + 25, { steps: 8 });
   await page.mouse.up();
   await expect(page.locator(".text-object textarea")).toHaveValue(
     "น้ำ กำ สมชาย",
@@ -221,6 +224,7 @@ test("typing directly then dragging preserves text and warns before losing edits
     .getByRole("button", { name: "ดาวน์โหลดไฟล์นี้", exact: true })
     .click();
   await page.getByRole("button", { name: "ปิดตัวอย่าง", exact: true }).click();
+  await page.locator(".text-object textarea").dblclick();
   await page.locator(".text-object textarea").fill("ยังไม่ได้ดาวน์โหลด");
   const prompt = page.waitForEvent("dialog");
   const reload = page.reload({ timeout: 2000 }).catch(() => {});

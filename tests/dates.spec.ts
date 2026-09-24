@@ -38,6 +38,22 @@ for (const mobile of [false, true]) {
     await expect(
       page.getByLabel("ขนาดตัวอักษรวันที่", { exact: true }),
     ).toHaveValue("24");
+    await expect(page.getByLabel("ลากเพื่อย้ายข้อความ")).toHaveCount(0);
+    const beforeMove = (await page.locator(".text-object").boundingBox())!;
+    await page.mouse.move(
+      beforeMove.x + 18,
+      beforeMove.y + beforeMove.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      beforeMove.x + 42,
+      beforeMove.y + beforeMove.height / 2 + 16,
+      { steps: 8 },
+    );
+    await page.mouse.up();
+    const afterMove = (await page.locator(".text-object").boundingBox())!;
+    expect(afterMove.x - beforeMove.x).toBeCloseTo(24, 0);
+    expect(afterMove.y - beforeMove.y).toBeCloseTo(16, 0);
     await page.getByRole("button", { name: "ค.ศ.", exact: true }).click();
     await expect(
       page.getByLabel("วันที่บนเอกสาร", { exact: true }),

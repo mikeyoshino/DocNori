@@ -37,10 +37,18 @@ test("desktop save, reusable placement, proportional resize, undo and vector PDF
 }) => {
   const writes: string[] = [];
   page.on("request", (r) => {
-    if (r.method() !== "GET") writes.push(r.url());
+    if (
+      r.method() !== "GET" &&
+      new URL(r.url()).origin === new URL(page.url()).origin
+    )
+      writes.push(r.url());
   });
   await openPdf(page);
-  await page.getByRole("button", { name: "สร้างลายเซ็น", exact: true }).click();
+  await page
+    .locator(".signature-library-panel")
+    .getByRole("button", { name: "เซ็นเอกสาร", exact: true })
+    .click();
+  await page.locator("#sign-only-me").click();
   await page
     .locator("#signature-source")
     .getByRole("button", { name: "สร้างลายเซ็น", exact: true })
@@ -107,7 +115,11 @@ test("QR phone saves encrypted ink to desktop once; PDF stays local; cancellatio
 }) => {
   test.skip(!process.env.APP_URL, "Phone relay runs with Docker Compose");
   await openPdf(page);
-  await page.getByRole("button", { name: "สร้างลายเซ็น", exact: true }).click();
+  await page
+    .locator(".signature-library-panel")
+    .getByRole("button", { name: "เซ็นเอกสาร", exact: true })
+    .click();
+  await page.locator("#sign-only-me").click();
   await page
     .getByRole("button", { name: "ใช้มือถือเซ็น", exact: true })
     .click();
@@ -123,7 +135,11 @@ test("QR phone saves encrypted ink to desktop once; PDF stays local; cancellatio
   const phone = await phoneContext.newPage();
   const payloads: Buffer[] = [];
   phone.on("request", (r) => {
-    if (r.method() === "POST") payloads.push(r.postDataBuffer()!);
+    if (
+      r.method() === "POST" &&
+      /\/api\/pairing\/[^/]+\/signature$/.test(new URL(r.url()).pathname)
+    )
+      payloads.push(r.postDataBuffer()!);
   });
   await phone.goto(url);
   await expect(phone.locator("#mobile-status")).toHaveText("พร้อมรับลายเซ็น");
@@ -151,7 +167,11 @@ test("QR phone saves encrypted ink to desktop once; PDF stays local; cancellatio
   ).toEqual({ local: 0, session: 0, runtimeHashOnly: true });
   await phone.reload();
   await expect(phone.locator("#mobile-status")).toContainText("ลิงก์ไม่ครบ");
-  await page.getByRole("button", { name: "สร้างลายเซ็น", exact: true }).click();
+  await page
+    .locator(".signature-library-panel")
+    .getByRole("button", { name: "เซ็นเอกสาร", exact: true })
+    .click();
+  await page.locator("#sign-only-me").click();
   await page
     .getByRole("button", { name: "ใช้มือถือเซ็น", exact: true })
     .click();
@@ -175,7 +195,11 @@ test("late acknowledgement cannot cancel a replacement QR", async ({
   const { encryptSignature } =
     await import("../src/SabuySign.Web/Client/signatures/crypto.ts");
   await openPdf(page);
-  await page.getByRole("button", { name: "สร้างลายเซ็น", exact: true }).click();
+  await page
+    .locator(".signature-library-panel")
+    .getByRole("button", { name: "เซ็นเอกสาร", exact: true })
+    .click();
+  await page.locator("#sign-only-me").click();
   await page
     .getByRole("button", { name: "ใช้มือถือเซ็น", exact: true })
     .click();

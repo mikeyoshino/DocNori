@@ -16,6 +16,10 @@ services:
       dockerfile: infra/Dockerfile
     environment:
       PublicOrigin: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      SigningSessions__ConnectionString: Host=postgres;Database=sabuysign;Username=sabuysign;Password=${POSTGRES_PASSWORD:-local-development-only}
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
   relay:
     build:
@@ -28,7 +32,6 @@ services:
     restart: unless-stopped
   postgres:
     image: postgres:17-alpine
-    profiles: [system-data]
     environment:
       POSTGRES_DB: sabuysign
       POSTGRES_USER: sabuysign

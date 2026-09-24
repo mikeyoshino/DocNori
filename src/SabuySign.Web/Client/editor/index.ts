@@ -1,3 +1,4 @@
+import { SigningSession } from "../signing-sessions/client";
 import { formatDate, localDate, type DateStamp } from "./dates";
 import { installGestureZoom } from "./gesture-zoom";
 import { isMark, markSvg, type MarkKind } from "./marks";
@@ -30,6 +31,7 @@ type Bridge = {
 };
 let fitText: (item: TextItem) => TextItem = (item) => item;
 let signatures: Signatures;
+let shared: SigningSession;
 let bridge: Bridge,
   session = new Session(layoutTextItem),
   original: Uint8Array | null = null,
@@ -50,6 +52,7 @@ let dateStamp: DateStamp = {
   format: "numeric",
 };
 let dateColor = "#172433";
+let editingTextId: string | null = null;
 let markKind: MarkKind = "check",
   markSize = 24,
   markColor = "#172c40",
@@ -75,7 +78,11 @@ const dirty = () =>
   !!signatures?.count;
 async function notify() {
   const selected = session.items.find((i) => i.id === session.selected);
+  shared?.update();
   await bridge.invokeMethodAsync("Changed", {
+    shared: shared?.active ?? false,
+    sharedClosed: shared?.closed ?? false,
+    sharedExpired: shared?.expired ?? false,
     loaded: !!doc,
     busy,
     filename,
@@ -83,7 +90,7 @@ async function notify() {
     tool,
     pages: doc?.numPages ?? 0,
     page: pageNumber,
-    count: session.items.length,
+    count: session.items.length + (shared?.confirmed.length ?? 0),
     zoom,
     fitZoom,
     markKind,
@@ -144,7 +151,7 @@ export async function init(ref: Bridge) {
   );
 
   signatures = new Signatures((id) => {
-    if (busy || !doc) return;
+    if (busy || shared?.locked || !doc) return;
     tool = `signature:${id}`;
     renderObjects();
     void notify();
@@ -207,7 +214,12 @@ export async function init(ref: Bridge) {
   $("page-surface").addEventListener(
     "click",
     (e) => {
-      if (busy || (e.target as HTMLElement).closest(".text-object")) return;
+      if (
+        busy ||
+        shared?.locked ||
+        (e.target as HTMLElement).closest(".text-object")
+      )
+        return;
       if (tool.startsWith("signature:")) {
         placeSignature(tool.slice(10), e.clientX, e.clientY);
       } else if (tool === "mark") {
@@ -245,9 +257,11 @@ export async function init(ref: Bridge) {
           tool === "date" ? dateStamp : undefined,
           tool === "date" ? dateColor : undefined,
         );
+        editingTextId = tool === "text" ? session.selected : null;
         tool = "select";
         changed();
       } else {
+        editingTextId = null;
         session.selected = null;
         renderObjects();
         void notify();
@@ -271,7 +285,13 @@ export async function init(ref: Bridge) {
       const typing = (e.target as HTMLElement).closest(
         "input,textarea,select,[contenteditable]",
       );
-      if (typing || busy || !doc || document.querySelector("dialog[open]"))
+      if (
+        typing ||
+        busy ||
+        shared?.locked ||
+        !doc ||
+        document.querySelector("dialog[open]")
+      )
         return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
@@ -362,14 +382,50 @@ export async function init(ref: Bridge) {
     },
     { signal },
   );
+  shared = new SigningSession({
+    document: async () => {
+      if (!doc) throw new Error("กรุณาเปิด PDF ก่อน");
+      return { bytes: await generate(), name: filename };
+    },
+    open: async (file) => {
+      await openFile(file, true);
+      if (!doc) throw new Error("เปิดเอกสารไม่ได้");
+    },
+    drafts: () => session.items,
+    clear: () => {
+      session = new Session(layoutTextItem);
+      output = null;
+      outputRevision = -1;
+    },
+    refresh: () => {
+      output = null;
+      outputRevision = -1;
+      if (doc) renderObjects();
+      void notify();
+    },
+    pages: () => doc?.numPages ?? 0,
+    pageBounds: async (page) => {
+      const viewport = (await doc!.getPage(page + 1)).getViewport({ scale: 1 });
+      return { width: viewport.width, height: viewport.height };
+    },
+    go: (page) => {
+      void command("page", String(page + 1));
+    },
+    draw: () => {
+      if (!shared?.locked) signatures.create();
+    },
+  });
+  await shared.restore();
   await notify();
 }
 export function pick() {
-  if (!busy) $<HTMLInputElement>("pdf-file").click();
+  if (!busy && !shared?.active) $<HTMLInputElement>("pdf-file").click();
 }
-async function openFile(file: File) {
-  if (busy) return;
+async function openFile(file: File, internal = false) {
+  if (shared?.active && !internal) return;
+  if (busy || (!internal && shared?.locked)) return;
   if (
+    !internal &&
     dirty() &&
     !confirm("เปิดไฟล์ใหม่? งานที่ยังไม่ดาวน์โหลดในไฟล์ปัจจุบันจะหาย")
   )
@@ -401,6 +457,7 @@ async function openFile(file: File) {
     original = bytes;
     filename = file.name;
     session = new Session(layoutTextItem);
+    editingTextId = null;
     pageNumber = 1;
     zoom = 1;
     dateStamp = { value: localDate(), calendar: "buddhist", format: "numeric" };
@@ -526,6 +583,7 @@ function setupThumbnails() {
     button.onclick = () => {
       if (!busy) {
         pageNumber = i;
+        editingTextId = null;
         session.selected = null;
         void renderPage().then(notify).catch(report);
       }
@@ -535,7 +593,7 @@ function setupThumbnails() {
   }
 }
 function placeSignature(id: string, clientX: number, clientY: number) {
-  if (busy || !doc) return;
+  if (busy || shared?.locked || !doc) return;
   const data = signatures.get(id);
   if (!data) return;
   const rect = $("page-surface").getBoundingClientRect();
@@ -575,6 +633,8 @@ function renderObjects() {
   const root = $("text-layer");
   root.replaceChildren();
   root.style.cursor = tool !== "select" ? "crosshair" : "default";
+  shared?.render(root, pageNumber - 1, zoom);
+  if (shared?.closed) return;
   for (const item of session.items.filter((i) => i.page === pageNumber - 1)) {
     const el = document.createElement("div");
     el.className = `text-object ${item.id === session.selected ? "selected" : ""}`;
@@ -608,7 +668,7 @@ function renderObjects() {
     remove.onpointerdown = (e) => e.stopPropagation();
     remove.onclick = (e) => {
       e.stopPropagation();
-      if (busy) return;
+      if (busy || shared?.locked) return;
       session.remove(item.id);
       changed();
       document
@@ -640,12 +700,13 @@ function renderObjects() {
       copy.onpointerdown = (e) => e.stopPropagation();
       copy.onclick = (e) => {
         e.stopPropagation();
-        if (busy) return;
+        if (busy || shared?.locked) return;
         session.duplicate(item.id, width, height);
         changed();
       };
       actions.append(handle, copy, remove);
-    } else actions.append(handle, remove);
+    } else if (item.signature) actions.append(handle, remove);
+    else actions.append(remove);
     const text = document.createElement("textarea");
     text.value = item.text;
     text.spellcheck = false;
@@ -654,14 +715,60 @@ function renderObjects() {
       "aria-label",
       item.date ? "วันที่บนเอกสาร" : "ข้อความบนเอกสาร",
     );
-    text.readOnly = !!item.date || item.id !== session.selected;
+    text.readOnly = !!item.date || item.id !== editingTextId;
     Object.assign(text.style, {
       fontSize: `${item.size * zoom}px`,
       lineHeight: "1.6",
       color: item.color,
       textAlign: item.align,
     });
-    text.onpointerdown = (e) => e.stopPropagation();
+    text.onpointerdown = (e) => {
+      e.stopPropagation();
+      if (
+        busy ||
+        item.signature ||
+        item.mark ||
+        editingTextId === item.id ||
+        e.button !== 0
+      )
+        return;
+      e.preventDefault();
+      tool = "select";
+      session.selected = item.id;
+      document
+        .querySelectorAll(".text-object")
+        .forEach((n) => n.classList.remove("selected"));
+      el.classList.add("selected");
+      void notify();
+      text.setPointerCapture(e.pointerId);
+      const startX = e.clientX,
+        startY = e.clientY;
+      let moved = false;
+      let update: Partial<TextItem> = {};
+      text.onpointermove = (ev) => {
+        const dx = ev.clientX - startX,
+          dy = ev.clientY - startY;
+        if (!moved && Math.hypot(dx, dy) < 4) return;
+        moved = true;
+        update = {
+          x: Math.max(0, Math.min(width - item.width, item.x + dx / zoom)),
+          y: Math.max(0, Math.min(height - item.height, item.y + dy / zoom)),
+        };
+        el.style.left = `${update.x! * zoom}px`;
+        el.style.top = `${update.y! * zoom}px`;
+      };
+      const finish = (commit: boolean) => {
+        text.onpointermove = null;
+        text.onpointerup = null;
+        text.onpointercancel = null;
+        if (moved && commit) {
+          session.update(item.id, update);
+          changed();
+        } else if (moved) renderObjects();
+      };
+      text.onpointerup = () => finish(true);
+      text.onpointercancel = () => finish(false);
+    };
     text.onclick = () => {
       if (session.selected !== item.id) {
         tool = "select";
@@ -673,8 +780,25 @@ function renderObjects() {
         document
           .querySelectorAll<HTMLTextAreaElement>(".text-object textarea")
           .forEach((input) => (input.readOnly = true));
-        text.readOnly = !!item.date;
+        text.readOnly = !!item.date || editingTextId !== item.id;
         void notify();
+      }
+    };
+    text.ondblclick = () => {
+      if (busy || item.signature || item.mark || item.date) return;
+      editingTextId = item.id;
+      session.selected = item.id;
+      tool = "select";
+      el.classList.add("selected");
+      text.readOnly = false;
+      text.focus();
+      text.setSelectionRange(text.value.length, text.value.length);
+      void notify();
+    };
+    text.onblur = () => {
+      if (editingTextId === item.id) {
+        editingTextId = null;
+        text.readOnly = true;
       }
     };
     text.oninput = () => {
@@ -706,7 +830,7 @@ function renderObjects() {
       [grip, true],
     ] as const)
       node.onpointerdown = (e) => {
-        if (busy || (resize && !item.signature)) return;
+        if (busy || shared?.locked || (resize && !item.signature)) return;
         e.preventDefault();
         e.stopPropagation();
         session.selected = item.id;
@@ -767,7 +891,7 @@ function renderObjects() {
       mark.style.color = item.color;
       mark.onclick = (e) => {
         e.stopPropagation();
-        if (busy) return;
+        if (busy || shared?.locked) return;
         session.selected = item.id;
         markKind = item.mark!;
         markSize = item.size;
@@ -802,7 +926,8 @@ function renderObjects() {
   }
 }
 export async function patch(key: string, value: string) {
-  if (busy || !session.selected) return;
+  if (busy || shared?.locked || !session.selected) return;
+  editingTextId = null;
   const item = session.items.find((i) => i.id === session.selected)!;
   if (item.mark) return;
   if (item.signature) {
@@ -854,7 +979,10 @@ function generate(): Promise<Uint8Array> {
     };
     worker.postMessage({
       bytes: original!.slice(),
-      items: session.items,
+      items: [
+        ...(shared?.confirmed ?? []),
+        ...(shared?.closed ? [] : session.items),
+      ],
       font: font.slice(),
     });
   });
@@ -915,8 +1043,32 @@ async function clearPreview() {
 }
 export async function command(action: string, value?: string) {
   if (busy && action !== "clearError") return;
+  if (shared?.active) {
+    if (
+      ["preview", "download"].includes(action) &&
+      (!shared.closed || shared.expired)
+    )
+      return;
+    if (action === "close") {
+      if (
+        !session.items.length ||
+        confirm("ออกจากเอกสาร? ลายเซ็นที่ยังไม่ยืนยันจะหาย")
+      )
+        location.href = "/tools/fill-sign";
+      return;
+    }
+    if (action === "tool" && value !== "select") return;
+    if (
+      shared.locked &&
+      ["undo", "redo", "delete", "signature"].includes(action)
+    )
+      return;
+  }
   try {
     switch (action) {
+      case "share":
+        shared.share();
+        break;
       case "markKind":
       case "markSize":
       case "markColor": {
@@ -1002,9 +1154,11 @@ export async function command(action: string, value?: string) {
         changed();
         break;
       case "signature":
-        if (doc) signatures.create();
+        editingTextId = null;
+        if (doc) shared.choose();
         break;
       case "tool": {
+        editingTextId = null;
         const selectedDate = session.items.find(
           (i) => i.id === session.selected && i.date,
         );
@@ -1019,10 +1173,12 @@ export async function command(action: string, value?: string) {
         break;
       }
       case "undo":
+        editingTextId = null;
         session.undo();
         changed();
         break;
       case "redo":
+        editingTextId = null;
         session.redo();
         changed();
         break;
@@ -1031,6 +1187,7 @@ export async function command(action: string, value?: string) {
         changed();
         break;
       case "page":
+        editingTextId = null;
         pageNumber = Math.max(
           1,
           Math.min(doc?.numPages ?? 1, Math.floor(Number(value) || 1)),
@@ -1099,6 +1256,7 @@ export async function command(action: string, value?: string) {
   }
 }
 async function releaseDocument() {
+  editingTextId = null;
   resetGestureZoom?.();
   signatures?.reset();
   renderGeneration++;
@@ -1123,4 +1281,5 @@ export async function dispose() {
   exportWorker?.terminate();
   await releaseDocument();
   signatures?.dispose();
+  shared?.dispose();
 }

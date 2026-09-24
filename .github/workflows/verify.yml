@@ -3,6 +3,17 @@ on: [push, pull_request]
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      signing-db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: signingtests
+          POSTGRES_PASSWORD: ci-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d signingtests"
+          --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -17,7 +28,9 @@ jobs:
       - run: dotnet restore
       - run: dotnet format --verify-no-changes --no-restore
       - run: dotnet build --no-restore
-      - run: dotnet test tests/SabuySign.Relay.Tests --no-build
+      - run: dotnet test --no-build
+        env:
+          SIGNING_TEST_DATABASE: Host=localhost;Port=5432;Database=signingtests;Username=postgres;Password=ci-test-only
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e -- tests/seo.spec.ts
       - run: docker compose -f infra/compose.yaml config --quiet

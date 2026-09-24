@@ -1,14 +1,9 @@
 import { test, expect } from "@playwright/test";
 
-test("AdSense loader is in the head of every public page and allowed by CSP", async ({
+test("AdSense loader is in public marketing pages and allowed by CSP", async ({
   request,
 }) => {
-  for (const path of [
-    "/",
-    "/tools/fill-sign",
-    "/tools/merge",
-    "/tools/missing",
-  ]) {
+  for (const path of ["/", "/tools/merge", "/tools/missing"]) {
     const response = await request.get(path);
     const html = await response.text();
     const csp = response.headers()["content-security-policy"];
@@ -205,4 +200,16 @@ test("landing uses static SSR and tools start only the WebAssembly runtime", asy
   expect(requests.some((url) => /\.wasm(?:\?|$)/.test(url))).toBe(true);
   expect(requests.some((url) => url.includes("/_blazor"))).toBe(false);
   expect(errors).toEqual([]);
+});
+
+test("signing pages never load third-party advertising scripts", async ({
+  request,
+}) => {
+  for (const path of ["/tools/fill-sign", "/sign", "/sign-together"]) {
+    const response = await request.get(path);
+    expect(response.status()).toBe(200);
+    expect(await response.text()).not.toContain(
+      "pagead2.googlesyndication.com",
+    );
+  }
 });

@@ -53,3 +53,30 @@
 .date-placement-hint{display:flex;align-items:flex-start;gap:7px;font-size:12px;line-height:1.7;color:var(--editor-muted);margin:20px 0 12px}.date-placement-hint svg{width:17px;height:17px;flex-shrink:0;margin-top:2px}.date-actions{display:flex;gap:8px}.date-actions .button:first-child{flex:1}.date-actions .button{min-height:44px}.date-done{margin-top:12px;width:100%;min-height:44px}
 .date-properties-content :is(button,input,select):focus-visible{outline:2px solid var(--editor-accent);outline-offset:2px}
 @media(max-width:700px){.date-properties{max-height:48dvh}.date-properties-content{padding:16px 20px max(16px,env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:12px}.date-panel-heading,.date-subtitle,.date-placement-hint,.date-actions,.date-done{grid-column:1/-1}.date-subtitle{margin:-6px 0 0}.date-calendar{margin:0;align-self:end}.date-calendar legend{font-size:11px}.date-calendar button{min-height:38px}.date-input-row{gap:4px}.date-input-row .button{padding:8px 4px;font-size:12px}.date-input-row input{padding:8px 4px;font-size:12px}.date-preview{margin:0;padding:10px}.date-preview output{font-size:15px}.date-style{grid-column:1/-1;display:flex}.date-placement-hint{margin:0}.date-done{margin:0}.editor-primary-tools .tool{padding-left:7px;padding-right:7px}}
+
+/* Text and date objects move directly; typing starts on a deliberate double click. */
+.text-object:not(.signature-object):not(.mark-object) textarea[readonly]{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.text-object:not(.signature-object):not(.mark-object) textarea[readonly]:active{cursor:grabbing}
+.text-object:not(.signature-object):not(.mark-object) textarea:not([readonly]){cursor:text;touch-action:auto;user-select:text;-webkit-user-select:text}
+
+/* Shared signing uses the existing editor shell and signature visual language. */
+.signing-panel{padding:22px 18px;color:var(--editor-ink,#172c40)}
+.signing-panel-title{display:flex;align-items:center;gap:8px}.signing-panel-title svg{color:var(--editor-accent)}.signing-panel h2{font-size:18px;margin:0}.signing-panel h3{font-size:14px;margin:0 0 8px}
+.signing-state{display:inline-block;margin-top:14px;padding:5px 10px;border-radius:6px;background:#eaf5ef;color:#246b48;font-size:12px;font-weight:600}
+.signing-panel .button{min-height:44px;margin-top:8px;font-size:13px}.signing-draft-section{margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0}
+.signing-activity{display:grid;gap:8px;margin-top:12px}.signing-member{border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px}.signing-member strong,.signing-member span{display:block;font-size:12px}.signing-member span{font-size:11px;color:#52697c;margin-top:5px}
+#signing-live{font-size:12px;color:#52697c;margin:20px 0 0}#signing-message,#signing-dialog-message,#signing-create-message{font-size:13px;overflow-wrap:anywhere}.signing-error{color:#aa302c}
+.signing-field{display:block;font-size:14px;margin:20px 0 8px}.signing-field input{box-sizing:border-box;width:100%;min-height:44px;margin-top:8px;border:1px solid #cbd8e4;border-radius:8px;padding:10px;font:inherit;color:#172c40;background:#fff}
+.signing-info{display:flex;gap:12px;margin:18px 0}.signing-info svg{flex-shrink:0;color:var(--editor-accent);margin-top:4px}.signing-info p{margin:0;font-size:14px;line-height:1.8}
+.signing-loading{padding:80px 24px;text-align:center}.signing-loading h2{font-size:24px}
+.confirmed-signature{position:absolute;pointer-events:none;user-select:none}.confirmed-signature img{width:100%;height:100%;display:block}
+.shared-signing .open-another,.shared-signing .editor-primary-tools button[aria-label="เพิ่มข้อความ"],.shared-signing .editor-primary-tools button[aria-label="เพิ่มวันที่"],.shared-signing .mark-picker-wrap,.shared-signing .properties-empty,.shared-signing .properties-panel>.panel-title{display:none}
+.shared-signing .signature-library-panel>.button,.shared-signing .signature-library-panel>.field-help{display:none}.shared-signing .signature-library-panel{border-top:1px solid #e2e8f0}
+.shared-signing-closed .signature-library-panel,.shared-signing-closed .signing-draft-section,.shared-signing-closed .editor-primary-tools,.shared-signing-closed .editor-history,.shared-signing-closed .editor-mobile-history{display:none}
+.shared-signing .editor-status>span:last-child{display:none}
+.signing-panel button:focus-visible,.signing-field input:focus-visible{outline:2px solid var(--editor-accent);outline-offset:3px}
+@media(max-width:700px){.shared-signing .properties-panel{display:block!important;max-height:42dvh;overflow:auto}.signing-panel{padding:14px 16px}.signing-panel-title{display:inline-flex}.signing-state{margin:0 0 0 12px}.signing-draft-section{margin-top:12px;padding-top:12px}.signing-panel .button{min-height:44px}.signing-activity{grid-template-columns:1fr 1fr}.shared-signing .editor-header-actions{gap:4px}.shared-signing .header-preview{display:none}}
+.signing-confirm-dialog p{white-space:pre-line;line-height:1.8;color:#52697c;font-size:14px}.signing-confirm-dialog h2{font-size:22px}
+.signing-points{display:flex;flex-wrap:wrap;gap:4px}.signing-points .button{padding:4px 8px;font-size:12px;margin:0;min-height:36px}.signing-page-count{display:block;margin-top:4px;color:#246b48;font-size:11px}
+@media(max-width:700px){.shared-signing .editor-mobile-history{display:none}.signing-points .button{min-height:44px}.shared-signing .editor-header-actions .button{padding:8px}}
+@media(max-width:700px){.shared-signing-closed .editor-toolbar{display:none}}

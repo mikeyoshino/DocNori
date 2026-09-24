@@ -1,14 +1,16 @@
+@using SabuySign.Web.Features.SigningSessions
 @using SabuySign.Web.Features.Tools
 @using SabuySign.Web.Features.Signatures
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 <PageTitle>กรอกข้อความและเซ็น PDF ออนไลน์ฟรี — DocNory</PageTitle>
+<div id="signing-loading" class="signing-loading" hidden><h2 id="signing-loading-text">กำลังเปิดเอกสารสำหรับเซ็นร่วมกัน…</h2><a href="/tools/fill-sign">กลับไปเครื่องมือเซ็นเอกสาร</a></div>
 <input id="pdf-file" type="file" accept="application/pdf,.pdf" disabled="@(!Ready)" hidden />
 <div class="landing" hidden="@State.Loaded">
     <ToolStart Tool="@(ToolCatalog.Tools.First(t => t.Id == "fill-sign"))" Ready="Ready" Busy="State.Busy" OnOpenPdf="Pick" />
 </div>
 <div class="editor-app" hidden="@(!State.Loaded)">
-    <header class="editor-header"><button class="brand brand-button" @onclick="Close"><BrandLogo /></button><span class="header-divider"></span><div class="filename"><strong>@State.Filename</strong><span>กรอกและเซ็น PDF · @State.Pages หน้า</span></div><div class="editor-header-actions"><div class="editor-mobile-history"><button class="tool" aria-label="ย้อนกลับ" disabled="@(!State.CanUndo || State.Busy)" @onclick='() => Command("undo")'><Icon Name="undo" /></button><button class="tool" aria-label="ทำซ้ำ" disabled="@(!State.CanRedo || State.Busy)" @onclick='() => Command("redo")'><Icon Name="redo" /></button></div><button class="button button-quiet small open-another" @onclick="Pick" disabled="@(!Ready || State.Busy)"><Icon Name="upload" /> เปิดไฟล์ใหม่</button><button class="button button-quiet small header-preview" aria-label="ดูตัวอย่าง PDF" disabled="@State.Busy" @onclick='() => Command("preview")'><Icon Name="eye" /> ดูตัวอย่าง</button><button class="button button-blue small" aria-label="ดาวน์โหลด PDF" disabled="@State.Busy" @onclick='() => Command("preview")'><Icon Name="download" /> ดาวน์โหลด<span class="desktop-label"> PDF</span></button></div></header>
+    <header class="editor-header"><button class="brand brand-button" @onclick="Close"><BrandLogo /></button><span class="header-divider"></span><div class="filename"><strong>@State.Filename</strong><span>@(State.Shared ? "เซ็นร่วมกัน" : "กรอกและเซ็น PDF") · @State.Pages หน้า</span></div><div class="editor-header-actions">@if(State.Shared && !State.SharedExpired) { <button class="button button-soft small" @onclick='() => Command("share")'><Icon Name="link" /> แชร์</button> }<div class="editor-mobile-history"><button class="tool" aria-label="ย้อนกลับ" disabled="@(!State.CanUndo || State.Busy)" @onclick='() => Command("undo")'><Icon Name="undo" /></button><button class="tool" aria-label="ทำซ้ำ" disabled="@(!State.CanRedo || State.Busy)" @onclick='() => Command("redo")'><Icon Name="redo" /></button></div><button class="button button-quiet small open-another" @onclick="Pick" disabled="@(!Ready || State.Busy)"><Icon Name="upload" /> เปิดไฟล์ใหม่</button><button class="button button-quiet small header-preview" aria-label="ดูตัวอย่าง PDF" disabled="@(State.Busy || (State.Shared && (!State.SharedClosed || State.SharedExpired)))" @onclick='() => Command("preview")'><Icon Name="eye" /> ดูตัวอย่าง</button><button class="button button-blue small" aria-label="ดาวน์โหลด PDF" disabled="@(State.Busy || (State.Shared && (!State.SharedClosed || State.SharedExpired)))" @onclick='() => Command("preview")'><Icon Name="download" /> ดาวน์โหลด<span class="desktop-label"> PDF</span></button></div></header>
     <div class="editor-toolbar">
         <div class="tool-group editor-primary-tools">
             <button class="tool @(State.Tool == "select" && State.Selected?.IsMark != true && State.Selected?.Date is null ? "active" : "")" disabled="@State.Busy" @onclick='() => Command("tool", "select")'><Icon Name="cursor" /><span>เลือก</span></button>
@@ -20,12 +22,13 @@
                 }
             </div>
             <button class="tool @(ShowDate ? "active" : "")" aria-label="เพิ่มวันที่" disabled="@State.Busy" @onclick='() => Command("tool", "date")'><Icon Name="calendar" /><span>วันที่</span></button>
-            <button class="tool @(State.Tool.StartsWith("signature:", StringComparison.Ordinal) ? "active" : "")" @onclick='() => Command("signature")' disabled="@State.Busy"><Icon Name="pen" /><span>ลายเซ็น</span></button>
+            <button class="tool @(State.Tool.StartsWith("signature:", StringComparison.Ordinal) ? "active" : "")" @onclick='() => Command("signature")' disabled="@State.Busy"><Icon Name="pen" /><span>เซ็นเอกสาร</span></button>
         </div>
         <div class="tool-group editor-history"><button class="tool icon-only" aria-label="ย้อนกลับ" title="ย้อนกลับ (Ctrl/⌘ Z)" disabled="@(!State.CanUndo || State.Busy)" @onclick='() => Command("undo")'><Icon Name="undo" /></button><button class="tool icon-only" aria-label="ทำซ้ำ" title="ทำซ้ำ (Ctrl/⌘ Shift Z)" disabled="@(!State.CanRedo || State.Busy)" @onclick='() => Command("redo")'><Icon Name="redo" /></button></div>
         <div class="zoom-label">ขนาดหน้า <Dropdown Label="ระดับซูม" Value="@ZoomValue" Options="@ZoomOptions" Disabled="@(!Ready || State.Busy)" CssClass="zoom-dropdown" ValueChanged='value => Command("zoom", value)' /></div>
     </div>
-    <div class="editor-body"><aside class="pages-panel"><div class="panel-title">หน้าเอกสาร <span>@State.Pages</span></div><div id="thumbnails"></div></aside><main class="workspace" aria-label="พื้นที่แก้ไขเอกสาร" @onclick="() => MarkMenu = false"><div class="workspace-caption"><span class="desktop-page-label">หน้า @State.Page จาก @State.Pages</span><div class="mobile-page-select">หน้า <Dropdown Label="หน้าเอกสาร" Value="@State.Page.ToString()" Options="@PageOptions" Disabled="@State.Busy" CssClass="page-dropdown" ValueChanged='value => Command("page", value)' /></div><div class="mobile-page-select mobile-zoom">ซูม <Dropdown Label="ระดับซูมบนมือถือ" Value="@ZoomValue" Options="@MobileZoomOptions" Disabled="@State.Busy" CssClass="zoom-dropdown" ValueChanged='value => Command("zoom", value)' /></div><span class="workspace-privacy"><Icon Name="lock" /> ไฟล์อยู่บนเครื่องคุณ</span></div><div id="page-surface"><canvas id="page-canvas"></canvas><div id="text-layer"></div></div><div class="workspace-tip"><Icon Name="lock" /> ไม่บันทึกร่าง — ดาวน์โหลดก่อนปิดหน้านี้</div></main><aside class="properties-panel @(ShowMarks ? "mark-properties" : ShowDate ? "date-properties" : "")">
+    <div class="editor-body"><aside class="pages-panel"><div class="panel-title">หน้าเอกสาร <span>@State.Pages</span></div><div id="thumbnails"></div></aside><main class="workspace" aria-label="พื้นที่แก้ไขเอกสาร" @onclick="() => MarkMenu = false"><div class="workspace-caption"><span class="desktop-page-label">หน้า @State.Page จาก @State.Pages</span><div class="mobile-page-select">หน้า <Dropdown Label="หน้าเอกสาร" Value="@State.Page.ToString()" Options="@PageOptions" Disabled="@State.Busy" CssClass="page-dropdown" ValueChanged='value => Command("page", value)' /></div><div class="mobile-page-select mobile-zoom">ซูม <Dropdown Label="ระดับซูมบนมือถือ" Value="@ZoomValue" Options="@MobileZoomOptions" Disabled="@State.Busy" CssClass="zoom-dropdown" ValueChanged='value => Command("zoom", value)' /></div><span class="workspace-privacy"><Icon Name="lock" /> @(State.Shared ? "เอกสารร่วมกัน · เข้ารหัส" : "ไฟล์อยู่บนเครื่องคุณ")</span></div><div id="page-surface"><canvas id="page-canvas"></canvas><div id="text-layer"></div></div><div class="workspace-tip"><Icon Name="lock" /> @(State.Shared ? "ลายเซ็นร่างจะปรากฏให้คนอื่นเห็นเมื่อกดยืนยัน" : "ไม่บันทึกร่าง — ดาวน์โหลดก่อนปิดหน้านี้")</div></main><aside class="properties-panel @(ShowMarks ? "mark-properties" : ShowDate ? "date-properties" : "")">
+            <SigningPanel />
             @if (ShowDate)
             {
                 <div class="date-properties-content">
@@ -36,7 +39,7 @@
                     <div class="date-format-label"><span>รูปแบบวันที่</span><Dropdown Id="stamp-format" Label="รูปแบบวันที่" Value="@State.Date.Format" Options="@DateFormatOptions" Disabled="@State.Busy" ValueChanged='value => Command("dateFormat", value)' /></div>
                     <div class="date-preview"><span>ตัวอย่างบนเอกสาร</span><output aria-live="polite" aria-label="ตัวอย่างวันที่">@State.DatePreview</output></div>
                     <div class="property-row date-style"><label>ขนาดตัวอักษร<input aria-label="ขนาดตัวอักษรวันที่" type="number" min="8" max="72" value="@State.DateSize" disabled="@State.Busy" @onchange='e => Command("dateSize", e.Value?.ToString())' /></label><label>สีตัวอักษร<input aria-label="สีตัวอักษรวันที่" type="color" value="@State.DateColor" disabled="@State.Busy" @onchange='e => Command("dateColor", e.Value?.ToString())' /></label></div>
-                    <p class="date-placement-hint"><Icon Name="@(State.Selected?.Date is not null ? "move" : "cursor")" />@(State.Selected?.Date is not null ? "ลากแถบเหนือวันที่เพื่อย้ายตำแหน่ง" : "คลิกบนเอกสารเพื่อวางวันที่")</p>
+                    <p class="date-placement-hint"><Icon Name="@(State.Selected?.Date is not null ? "move" : "cursor")" />@(State.Selected?.Date is not null ? "ลากวันที่เพื่อย้ายตำแหน่ง" : "คลิกบนเอกสารเพื่อวางวันที่")</p>
                     @if (State.Selected?.Date is not null)
                     {
                         <div class="date-actions"><button class="button button-soft" disabled="@State.Busy" @onclick='() => Command("tool", "date")'>วางอีกตำแหน่ง</button><button class="button button-quiet" aria-label="ลบวันที่" disabled="@State.Busy" @onclick='() => Command("delete")'><Icon Name="trash" /></button></div>
@@ -64,16 +67,16 @@
             }
             else if (State.Selected is { } selected)
             {
-                <div class="properties-content"><label>ข้อความที่เลือก<textarea aria-label="ข้อความที่เลือก" value="@selected.Text" @onchange='e => Patch("text", e.Value?.ToString())' rows="4"></textarea></label><div class="font-field"><span>ฟอนต์</span><span class="read-only-font" aria-label="ฟอนต์ Sarabun">Sarabun · ภาษาไทย / English</span></div><div class="property-row"><label>ขนาดตัวอักษร<input aria-label="ขนาดตัวอักษร" type="number" min="8" max="72" value="@selected.Size" @onchange='e => Patch("size", e.Value?.ToString())' /></label><label>สีตัวอักษร<input aria-label="สีตัวอักษร" type="color" value="@selected.Color" @onchange='e => Patch("color", e.Value?.ToString())' /></label></div><div class="alignment-field"><span>การจัดแนว</span><Dropdown Label="การจัดแนว" Value="@selected.Align" Options="@AlignmentOptions" ValueChanged='value => Patch("align", value)' /></div><p class="field-help">กรอบปรับพอดีกับข้อความอัตโนมัติ<br />ปรับขนาดตัวอักษรจากช่องด้านบน<br />กด Enter เพื่อขึ้นบรรทัดใหม่</p><button class="button delete-button" @onclick='() => Command("delete")'><Icon Name="trash" /> ลบข้อความ</button></div>
+                <div class="properties-content"><label>ข้อความที่เลือก<textarea aria-label="ข้อความที่เลือก" value="@selected.Text" @onchange='e => Patch("text", e.Value?.ToString())' rows="4"></textarea></label><div class="font-field"><span>ฟอนต์</span><span class="read-only-font" aria-label="ฟอนต์ Sarabun">Sarabun · ภาษาไทย / English</span></div><div class="property-row"><label>ขนาดตัวอักษร<input aria-label="ขนาดตัวอักษร" type="number" min="8" max="72" value="@selected.Size" @onchange='e => Patch("size", e.Value?.ToString())' /></label><label>สีตัวอักษร<input aria-label="สีตัวอักษร" type="color" value="@selected.Color" @onchange='e => Patch("color", e.Value?.ToString())' /></label></div><div class="alignment-field"><span>การจัดแนว</span><Dropdown Label="การจัดแนว" Value="@selected.Align" Options="@AlignmentOptions" ValueChanged='value => Patch("align", value)' /></div><p class="field-help">คลิกแล้วลากเพื่อย้าย · ดับเบิลคลิกเพื่อแก้ข้อความ<br />ปรับขนาดตัวอักษรจากช่องด้านบน<br />กด Enter เพื่อขึ้นบรรทัดใหม่</p><button class="button delete-button" @onclick='() => Command("delete")'><Icon Name="trash" /> ลบข้อความ</button></div>
             }
             else
             {
                 <div class="properties-empty"><span class="empty-icon"><Icon Name="cursor" /></span><h3>เลือกข้อความเพื่อแก้ไข</h3><p>หรือกด “เพิ่มข้อความ”<br />แล้วคลิกบนหน้าเอกสาร</p><button class="button button-soft" @onclick='() => Command("tool", "text")'><Icon Name="text" /> เพิ่มข้อความ</button></div>
             }
             }
-            <div class="signature-library-panel" hidden="@ShowMarks"><div class="panel-title">ลายเซ็นของฉัน</div><div id="signature-library"></div><button class="button button-soft full" @onclick='() => Command("signature")' disabled="@State.Busy">สร้างลายเซ็น</button><p class="field-help">ลากลายเซ็นไปวาง หรือคลิกแล้วคลิกบน PDF<br />เก็บชั่วคราวจนกว่าจะปิดหน้านี้</p></div>
+            <div class="signature-library-panel" hidden="@ShowMarks"><div class="panel-title">ลายเซ็นของฉัน</div><div id="signature-library"></div><button class="button button-soft full" @onclick='() => Command("signature")' disabled="@State.Busy"><Icon Name="pen" /> เซ็นเอกสาร</button><p class="field-help">ลากลายเซ็นไปวาง หรือคลิกแล้วคลิกบน PDF<br />เก็บชั่วคราวจนกว่าจะปิดหน้านี้</p></div>
         </aside></div>
-    <div class="editor-status"><span>@State.Count รายการ</span><span>@(State.Busy ? "กำลังประมวลผล…" : State.Tool == "mark" ? "คลิกบนเอกสารเพื่อวางเครื่องหมาย · Esc เพื่อหยุด" : "คลิกเลือกรายการเพื่อแก้ไข")</span><span>ดาวน์โหลดงานก่อนปิดหน้านี้</span></div>
+    <div class="editor-status"><span>@State.Count รายการ</span><span>@(State.Busy ? "กำลังประมวลผล…" : State.Shared ? (State.SharedClosed ? "เอกสารฉบับสุดท้าย · แก้ไขไม่ได้" : "ลายเซ็นร่างจะถูกส่งเมื่อกดยืนยัน") : State.Tool == "mark" ? "คลิกบนเอกสารเพื่อวางเครื่องหมาย · Esc เพื่อหยุด" : "คลิกเลือกรายการเพื่อแก้ไข")</span><span>ดาวน์โหลดงานก่อนปิดหน้านี้</span></div>
 </div>
 @if (!string.IsNullOrEmpty(State.Error))
 {
@@ -81,6 +84,7 @@
 }
 <dialog id="preview-dialog" aria-labelledby="preview-heading"><div class="preview-header"><div><h2 id="preview-heading">ตรวจเอกสารก่อนดาวน์โหลด</h2><p>ตัวอย่างจากไฟล์ PDF ที่จะดาวน์โหลดจริง</p></div><button class="tool" aria-label="ปิดตัวอย่าง" @onclick='() => Command("closePreview")'><Icon Name="close" /></button></div><div class="preview-toolbar"><button class="button button-quiet small" @onclick='() => Command("previewPrevious")'>หน้าก่อน</button><span id="preview-page-label"></span><button class="button button-quiet small" @onclick='() => Command("previewNext")'>หน้าถัดไป</button></div><div class="preview-body"><canvas id="preview-canvas"></canvas></div><div class="preview-footer"><button class="button button-quiet" @onclick='() => Command("closePreview")'>กลับไปแก้ไข</button><button class="button button-blue" @onclick='() => Command("download")'><Icon Name="download" /> ดาวน์โหลดไฟล์นี้</button></div></dialog>
 <SignatureDialogs />
+<SigningControls />
 <div id="blazor-error-ui">เกิดข้อผิดพลาด กรุณาดาวน์โหลดงานถ้ายังทำได้ก่อนรีเฟรช <a href="/">โหลดหน้าใหม่</a></div>
 @code {
     private IJSObjectReference? Module;
@@ -129,6 +133,9 @@
         public string DatePreview { get; set; } = "";
         public double DateSize { get; set; } = 16;
         public string DateColor { get; set; } = "#172433";
+        public bool Shared { get; set; }
+        public bool SharedClosed { get; set; }
+        public bool SharedExpired { get; set; }
         public bool Loaded { get; set; }
         public bool Busy { get; set; }
         public string Filename { get; set; } = "";

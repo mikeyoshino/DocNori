@@ -2,13 +2,16 @@ using System.Security.Cryptography;
 using System.Xml.Linq;
 using SabuySign.Host.Components;
 using SabuySign.Host.Features.Seo;
+using SabuySign.Host.Features.SigningSessions;
 using SabuySign.Web.Features.Tools;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseStaticWebAssets();
 builder.Services.AddRazorComponents().AddInteractiveWebAssemblyComponents();
 builder.Services.AddSingleton(new PublicSite(builder.Configuration["PublicOrigin"] ?? "http://localhost:8080"));
+builder.AddSigningSessions();
 var app = builder.Build();
+app.UseRateLimiter();
 app.Use(async (context, next) =>
 {
     var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24));
@@ -30,6 +33,7 @@ app.Use(async (context, next) =>
 });
 app.UseAntiforgery();
 app.MapStaticAssets();
+await app.MapSigningSessions();
 app.MapGet("/robots.txt", (PublicSite site) => Results.Text($"User-agent: *\nAllow: /\nDisallow: /sign\nDisallow: /api/\nSitemap: {site.Url("/sitemap.xml")}\n", "text/plain"));
 app.MapGet("/sitemap.xml", (PublicSite site) =>
 {
@@ -39,3 +43,5 @@ app.MapGet("/sitemap.xml", (PublicSite site) =>
 });
 app.MapRazorComponents<App>().AddInteractiveWebAssemblyRenderMode();
 app.Run();
+
+public partial class Program { }

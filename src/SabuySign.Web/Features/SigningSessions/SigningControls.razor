@@ -1,0 +1,31 @@
+<dialog id="signing-mode" class="signature-dialog signature-source-dialog" aria-labelledby="signing-mode-title">
+    <div class="signature-heading"><div><h2 id="signing-mode-title">ใครต้องเซ็นเอกสารนี้?</h2><p>เลือกวิธีที่เหมาะกับเอกสารของคุณ</p></div><button class="tool signature-close" data-close-signing aria-label="ปิดตัวเลือกการเซ็น"><Icon Name="close" /></button></div>
+    <div class="signature-choices">
+        <button id="sign-only-me" class="signature-choice"><span class="signature-choice-icon"><Icon Name="user" /></span><strong>เฉพาะฉัน</strong><span class="signature-choice-description">เซ็นด้วยตัวเอง<br />แล้วดาวน์โหลดเอกสาร</span><span class="signature-choice-action">เริ่มเซ็น <Icon Name="arrow" /></span></button>
+        <button id="sign-with-others" class="signature-choice"><span class="signature-choice-icon"><Icon Name="users" /></span><strong>หลายคน</strong><span class="signature-choice-description">แชร์เอกสารให้คนอื่น<br />เข้ามาเซ็นร่วมกัน</span><span class="signature-choice-action">สร้างลิงก์ <Icon Name="arrow" /></span></button>
+    </div>
+</dialog>
+<dialog id="signing-create" class="signature-dialog" aria-labelledby="signing-create-title">
+    <div class="signature-heading"><h2 id="signing-create-title">เซ็นร่วมกันในเอกสารเดียว</h2><button class="tool" data-close-signing aria-label="ปิดหน้าสร้างลิงก์"><Icon Name="close" /></button></div>
+    <div class="signing-info"><Icon Name="users" /><p>ผู้ที่มีลิงก์เปิดดูและเซ็นได้ทุกหน้า โดยไม่ต้องสมัครสมาชิก และส่งลิงก์ต่อได้</p></div>
+    <div class="signing-info"><Icon Name="lock" /><p>เก็บเอกสารที่เข้ารหัสไว้ชั่วคราว 7 วัน หลังจบการเซ็นจะดาวน์โหลดได้อีก 24 ชั่วโมง แล้วลบอัตโนมัติ</p></div>
+    <p class="field-help">ข้อความและลายเซ็นที่มีอยู่จะรวมเป็นต้นฉบับและแก้ไขไม่ได้หลังสร้างลิงก์ เก็บลิงก์เจ้าของไว้เพื่อกลับมาจบการเซ็น หากลิงก์หายเราไม่สามารถกู้คืนได้</p>
+    <p id="signing-create-message" role="status"></p>
+    <div class="signature-actions"><button class="button button-quiet" data-close-signing>กลับไปตรวจเอกสาร</button><button id="signing-create-confirm" class="button button-blue"><Icon Name="link" /> สร้างลิงก์สำหรับเซ็น</button></div>
+</dialog>
+<dialog id="signing-share-dialog" class="signature-dialog" aria-labelledby="signing-share-title">
+    <div class="signature-heading"><h2 id="signing-share-title">แชร์เอกสารให้ร่วมเซ็น</h2><button class="tool" data-close-signing aria-label="ปิดหน้าแชร์ลิงก์"><Icon Name="close" /></button></div>
+    <p>ทุกคนที่มีลิงก์นี้สามารถอ่านและเซ็นเอกสารได้</p>
+    <label class="signing-field">ลิงก์สำหรับผู้เซ็น<input id="signing-share-link" readonly /></label>
+    <button id="signing-copy" class="button button-blue full"><Icon Name="link" /> คัดลอกลิงก์</button>
+    <label class="signing-field">ส่งผ่านอีเมล<input id="signing-email" type="email" placeholder="name@example.com" /></label>
+    <a id="signing-email-link" class="button button-soft full" hidden><Icon Name="mail" /> เปิดแอปอีเมลเพื่อส่งคำเชิญ</a>
+    <p class="field-help">ส่งผ่านแอปอีเมลของคุณ ลิงก์นี้ไม่ได้ยืนยันตัวตนผู้เซ็น</p>
+    <button id="signing-copy-owner" class="button button-quiet full"><Icon Name="lock" /> คัดลอกลิงก์เจ้าของไว้ส่วนตัว</button>
+    <p id="signing-dialog-message" role="status"></p>
+</dialog>
+<dialog id="signing-confirm" class="signature-dialog signing-confirm-dialog" aria-labelledby="signing-confirm-title" aria-describedby="signing-confirm-description">
+    <div class="signature-heading"><h2 id="signing-confirm-title"></h2><button class="tool" id="signing-confirm-close" aria-label="ยกเลิก"><Icon Name="close" /></button></div>
+    <p id="signing-confirm-description"></p>
+    <div class="signature-actions"><button id="signing-confirm-cancel" class="button button-quiet">กลับไปตรวจสอบ</button><button id="signing-confirm-accept" class="button button-blue">ยืนยัน</button></div>
+</dialog>

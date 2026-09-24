@@ -3,6 +3,10 @@
     [Parameter] public string Name { get; set; } = "file";
     private string Path => Name switch
     {
+        "users" => "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 7a4 4 0 1 0-8 0 4 4 0 0 0 8 0m4-4a4 4 0 0 1 0 8",
+        "user" => "M20 21v-2a6 6 0 0 0-6-6h-4a6 6 0 0 0-6 6v2M16 6a4 4 0 1 0-8 0 4 4 0 0 0 8 0",
+        "link" => "M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2m3 6a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2",
+        "mail" => "M3 5h18v14H3zM3 5l9 7 9-7",
         "calendar" => "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm2-2v5m10-5v5M3 10h18M7 14h2m6 0h2M7 18h2",
         "phone" => "M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm2 3h4m-3 14h2",
         "pen" => "m4 16 12-12 4 4L8 20H4Zm10-10 4 4M4 23h17",
