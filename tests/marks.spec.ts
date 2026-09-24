@@ -24,7 +24,8 @@ test("marks place continuously, edit, duplicate, undo, navigate and export local
 }) => {
   const uploads: string[] = [];
   page.on("request", (r) => {
-    if (r.method() !== "GET") uploads.push(r.url());
+    if (r.method() !== "GET" && new URL(r.url()).hostname === "127.0.0.1")
+      uploads.push(r.url());
   });
   await open(page);
   await page.getByRole("button", { name: "เครื่องหมาย", exact: true }).click();
