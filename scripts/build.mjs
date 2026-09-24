@@ -13,6 +13,7 @@ await build({
     site: "src/SabuySign.Web/Client/site.ts",
     navigation: "src/SabuySign.Web/Client/navigation/index.ts",
     mobile: "src/SabuySign.Web/Client/signatures/mobile.ts",
+    dropdown: "src/SabuySign.Web/Client/shared/dropdown.ts",
   },
   bundle: true,
   format: "esm",

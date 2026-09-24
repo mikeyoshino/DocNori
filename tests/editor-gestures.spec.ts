@@ -1,3 +1,4 @@
+import { chooseDropdown } from "./helpers/dropdown";
 import { test, expect } from "@playwright/test";
 import { PDFDocument } from "pdf-lib";
 
@@ -17,7 +18,7 @@ test("pinch zoom is scoped to the PDF and new text keeps its size", async ({
   });
   const surface = page.locator("#page-surface");
   await expect(surface).toBeVisible();
-  await page.getByLabel("ระดับซูม", { exact: true }).selectOption("1");
+  await chooseDropdown(page, "ระดับซูม", "1");
   const initial = await surface.boundingBox();
   const pinch = await surface.evaluate((el) => {
     const rect = el.getBoundingClientRect();
@@ -38,8 +39,15 @@ test("pinch zoom is scoped to the PDF and new text keeps its size", async ({
     .toBeGreaterThan(initial!.width);
   expect(await page.evaluate(() => visualViewport!.scale)).toBe(1);
   await expect
-    .poll(async () =>
-      Number(await page.getByLabel("ระดับซูม", { exact: true }).inputValue()),
+    .poll(
+      async () =>
+        Number(
+          (
+            await page
+              .getByRole("button", { name: "ระดับซูม", exact: true })
+              .innerText()
+          ).replace("%", ""),
+        ) / 100,
     )
     .toBeGreaterThan(1);
   const beforeSafari = (await surface.boundingBox())!.width;
@@ -87,7 +95,7 @@ test("pinch zoom is scoped to the PDF and new text keeps its size", async ({
       return event.defaultPrevented;
     }),
   ).toBe(false);
-  await page.getByLabel("ระดับซูม", { exact: true }).selectOption("1");
+  await chooseDropdown(page, "ระดับซูม", "1");
   await page
     .getByRole("button", { name: "เพิ่มข้อความ", exact: true })
     .first()

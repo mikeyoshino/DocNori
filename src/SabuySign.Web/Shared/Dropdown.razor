@@ -1,0 +1,53 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<div class="doc-dropdown @CssClass">
+    <button id="@Id" type="button" class="doc-dropdown-trigger" aria-label="@Label" aria-haspopup="listbox" aria-controls="@MenuId" aria-expanded="false" disabled="@Disabled" @ref="Trigger">
+        <span class="doc-dropdown-value">@(Options.FirstOrDefault(option => option.Value == Value)?.Text ?? Value)</span>
+        <svg class="doc-dropdown-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
+    <div id="@MenuId" class="doc-dropdown-menu" role="listbox" aria-label="@Label" popover="auto" @ref="Menu">
+        @foreach (var option in Options)
+        {
+            <button type="button" class="doc-dropdown-option" role="option" data-value="@option.Value" aria-selected="@(option.Value == Value ? "true" : "false")" tabindex="-1" @key="option.Value">
+                <span>@option.Text</span><svg class="doc-dropdown-check" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+            </button>
+        }
+    </div>
+</div>
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<DropdownOption> Options { get; set; } = [];
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string CssClass { get; set; } = "";
+    [Parameter] public bool Disabled { get; set; }
+    private readonly string MenuId = $"doc-dropdown-{Guid.NewGuid():N}";
+    private ElementReference Trigger;
+    private ElementReference Menu;
+    private DotNetObjectReference<Dropdown>? Self;
+    private IJSObjectReference? Module;
+    private IJSObjectReference? Controller;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/dropdown.js");
+        Self = DotNetObjectReference.Create(this);
+        Controller = await Module.InvokeAsync<IJSObjectReference>("setupDropdown", Trigger, Menu, Self);
+    }
+
+    [JSInvokable]
+    public Task SelectOption(string value)
+    {
+        if (Disabled || !Options.Any(option => option.Value == value)) return Task.CompletedTask;
+        return ValueChanged.InvokeAsync(value);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Controller is not null) await Controller.InvokeVoidAsync("dispose");
+        if (Module is not null) await Module.DisposeAsync();
+        Self?.Dispose();
+    }
+}

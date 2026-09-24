@@ -3,6 +3,7 @@
     [Parameter] public string Name { get; set; } = "file";
     private string Path => Name switch
     {
+        "calendar" => "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm2-2v5m10-5v5M3 10h18M7 14h2m6 0h2M7 18h2",
         "phone" => "M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm2 3h4m-3 14h2",
         "pen" => "m4 16 12-12 4 4L8 20H4Zm10-10 4 4M4 23h17",
         "cross" => "m6 6 12 12M18 6 6 18",

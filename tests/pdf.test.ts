@@ -360,3 +360,27 @@ test("rejects an automatically fitted text frame extending outside the PDF page"
     /ขอบหน้า/,
   );
 });
+
+test("Thai date stamps export as searchable text with Buddhist year", async () => {
+  const { Session } =
+    await import("../src/SabuySign.Web/Client/editor/session.ts");
+  const s = new Session();
+  s.add(0, 50, 50, {
+    value: "2026-09-24",
+    calendar: "buddhist",
+    format: "long",
+  });
+  const source = await PDFDocument.create();
+  source.addPage([595, 842]);
+  const data = await exportPdf(await source.save(), s.items, font);
+  const task = getDocument({ data, useSystemFonts: false });
+  const pdf = await task.promise;
+  try {
+    const content = await (await pdf.getPage(1)).getTextContent();
+    const text = content.items.map((i) => ("str" in i ? i.str : "")).join("");
+    // PDF.js can infer whitespace between separately positioned Thai graphemes.
+    assert.equal(text.replace(/\s/g, ""), "24กันยายน2569");
+  } finally {
+    await task.destroy();
+  }
+});

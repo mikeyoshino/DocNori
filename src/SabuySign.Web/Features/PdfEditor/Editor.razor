@@ -11,7 +11,7 @@
     <header class="editor-header"><button class="brand brand-button" @onclick="Close"><BrandLogo /></button><span class="header-divider"></span><div class="filename"><strong>@State.Filename</strong><span>กรอกและเซ็น PDF · @State.Pages หน้า</span></div><div class="editor-header-actions"><div class="editor-mobile-history"><button class="tool" aria-label="ย้อนกลับ" disabled="@(!State.CanUndo || State.Busy)" @onclick='() => Command("undo")'><Icon Name="undo" /></button><button class="tool" aria-label="ทำซ้ำ" disabled="@(!State.CanRedo || State.Busy)" @onclick='() => Command("redo")'><Icon Name="redo" /></button></div><button class="button button-quiet small open-another" @onclick="Pick" disabled="@(!Ready || State.Busy)"><Icon Name="upload" /> เปิดไฟล์ใหม่</button><button class="button button-quiet small header-preview" aria-label="ดูตัวอย่าง PDF" disabled="@State.Busy" @onclick='() => Command("preview")'><Icon Name="eye" /> ดูตัวอย่าง</button><button class="button button-blue small" aria-label="ดาวน์โหลด PDF" disabled="@State.Busy" @onclick='() => Command("preview")'><Icon Name="download" /> ดาวน์โหลด<span class="desktop-label"> PDF</span></button></div></header>
     <div class="editor-toolbar">
         <div class="tool-group editor-primary-tools">
-            <button class="tool @(State.Tool == "select" && State.Selected?.IsMark != true ? "active" : "")" disabled="@State.Busy" @onclick='() => Command("tool", "select")'><Icon Name="cursor" /><span>เลือก</span></button>
+            <button class="tool @(State.Tool == "select" && State.Selected?.IsMark != true && State.Selected?.Date is null ? "active" : "")" disabled="@State.Busy" @onclick='() => Command("tool", "select")'><Icon Name="cursor" /><span>เลือก</span></button>
             <button class="tool @(State.Tool == "text" ? "active" : "")" aria-label="เพิ่มข้อความ" disabled="@State.Busy" @onclick='() => Command("tool", "text")'><Icon Name="text" /><span>ข้อความ</span></button>
             <div class="mark-picker-wrap"><button class="tool @(State.Tool == "mark" || State.Selected?.IsMark == true ? "active" : "")" aria-expanded="@(MarkMenu ? "true" : "false")" aria-controls="mark-picker" disabled="@State.Busy" @onclick="ToggleMarks"><Icon Name="@State.MarkKind" /><span>เครื่องหมาย</span><span class="mark-chevron" aria-hidden="true">⌄</span></button>
                 @if (MarkMenu)
@@ -19,13 +19,32 @@
                     <div class="mark-picker" id="mark-picker"><p>เลือกเครื่องหมาย</p><MarkChoices Value="@State.MarkKind" Disabled="@State.Busy" OnChange="ChooseMark" /><small>เลือกแล้วคลิกบนเอกสารเพื่อวาง</small></div>
                 }
             </div>
+            <button class="tool @(ShowDate ? "active" : "")" aria-label="เพิ่มวันที่" disabled="@State.Busy" @onclick='() => Command("tool", "date")'><Icon Name="calendar" /><span>วันที่</span></button>
             <button class="tool @(State.Tool.StartsWith("signature:", StringComparison.Ordinal) ? "active" : "")" @onclick='() => Command("signature")' disabled="@State.Busy"><Icon Name="pen" /><span>ลายเซ็น</span></button>
         </div>
         <div class="tool-group editor-history"><button class="tool icon-only" aria-label="ย้อนกลับ" title="ย้อนกลับ (Ctrl/⌘ Z)" disabled="@(!State.CanUndo || State.Busy)" @onclick='() => Command("undo")'><Icon Name="undo" /></button><button class="tool icon-only" aria-label="ทำซ้ำ" title="ทำซ้ำ (Ctrl/⌘ Shift Z)" disabled="@(!State.CanRedo || State.Busy)" @onclick='() => Command("redo")'><Icon Name="redo" /></button></div>
-        <label class="zoom-label">ขนาดหน้า <select aria-label="ระดับซูม" value="@(State.FitZoom ? "fit" : State.Zoom.ToString(System.Globalization.CultureInfo.InvariantCulture))" @onchange='e => Command("zoom", e.Value?.ToString())' disabled="@(!Ready || State.Busy)"><option value="fit">พอดีหน้าจอ</option><option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option>@if (!State.FitZoom && !new double[] { 0.5, 0.75, 1, 1.25, 1.5, 2 }.Contains(State.Zoom)) { <option value="@State.Zoom.ToString(System.Globalization.CultureInfo.InvariantCulture)">@Math.Round(State.Zoom * 100)%</option> }</select></label>
+        <div class="zoom-label">ขนาดหน้า <Dropdown Label="ระดับซูม" Value="@ZoomValue" Options="@ZoomOptions" Disabled="@(!Ready || State.Busy)" CssClass="zoom-dropdown" ValueChanged='value => Command("zoom", value)' /></div>
     </div>
-    <div class="editor-body"><aside class="pages-panel"><div class="panel-title">หน้าเอกสาร <span>@State.Pages</span></div><div id="thumbnails"></div></aside><main class="workspace" aria-label="พื้นที่แก้ไขเอกสาร" @onclick="() => MarkMenu = false"><div class="workspace-caption"><span class="desktop-page-label">หน้า @State.Page จาก @State.Pages</span><label class="mobile-page-select">หน้า <select aria-label="หน้าเอกสาร" value="@State.Page" disabled="@State.Busy" @onchange='e => Command("page", e.Value?.ToString())'>@for (var number = 1; number <= State.Pages; number++) { <option value="@number">@number / @State.Pages</option> }</select></label><label class="mobile-page-select mobile-zoom">ซูม <select aria-label="ระดับซูมบนมือถือ" value="@(State.FitZoom ? "fit" : State.Zoom.ToString(System.Globalization.CultureInfo.InvariantCulture))" disabled="@State.Busy" @onchange='e => Command("zoom", e.Value?.ToString())'><option value="fit">พอดี</option><option value="0.75">75%</option><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option>@if (!State.FitZoom && !new double[] { 0.75, 1, 1.5, 2 }.Contains(State.Zoom)) { <option value="@State.Zoom.ToString(System.Globalization.CultureInfo.InvariantCulture)">@Math.Round(State.Zoom * 100)%</option> }</select></label><span class="workspace-privacy"><Icon Name="lock" /> ไฟล์อยู่บนเครื่องคุณ</span></div><div id="page-surface"><canvas id="page-canvas"></canvas><div id="text-layer"></div></div><div class="workspace-tip"><Icon Name="lock" /> ไม่บันทึกร่าง — ดาวน์โหลดก่อนปิดหน้านี้</div></main><aside class="properties-panel @(ShowMarks ? "mark-properties" : "")">
-            @if (ShowMarks)
+    <div class="editor-body"><aside class="pages-panel"><div class="panel-title">หน้าเอกสาร <span>@State.Pages</span></div><div id="thumbnails"></div></aside><main class="workspace" aria-label="พื้นที่แก้ไขเอกสาร" @onclick="() => MarkMenu = false"><div class="workspace-caption"><span class="desktop-page-label">หน้า @State.Page จาก @State.Pages</span><div class="mobile-page-select">หน้า <Dropdown Label="หน้าเอกสาร" Value="@State.Page.ToString()" Options="@PageOptions" Disabled="@State.Busy" CssClass="page-dropdown" ValueChanged='value => Command("page", value)' /></div><div class="mobile-page-select mobile-zoom">ซูม <Dropdown Label="ระดับซูมบนมือถือ" Value="@ZoomValue" Options="@MobileZoomOptions" Disabled="@State.Busy" CssClass="zoom-dropdown" ValueChanged='value => Command("zoom", value)' /></div><span class="workspace-privacy"><Icon Name="lock" /> ไฟล์อยู่บนเครื่องคุณ</span></div><div id="page-surface"><canvas id="page-canvas"></canvas><div id="text-layer"></div></div><div class="workspace-tip"><Icon Name="lock" /> ไม่บันทึกร่าง — ดาวน์โหลดก่อนปิดหน้านี้</div></main><aside class="properties-panel @(ShowMarks ? "mark-properties" : ShowDate ? "date-properties" : "")">
+            @if (ShowDate)
+            {
+                <div class="date-properties-content">
+                    <div class="date-panel-heading"><Icon Name="calendar" /><h2>@(State.Selected?.Date is not null ? "วันที่ที่เลือก" : "เพิ่มวันที่")</h2></div>
+                    <p class="date-subtitle">เลือกวันที่และรูปแบบที่ใช้ในเอกสาร</p>
+                    <div class="date-input-row"><label for="stamp-date">วันที่<input id="stamp-date" type="date" min="0001-01-01" max="9999-12-31" value="@State.Date.Value" disabled="@State.Busy" @onchange='e => Command("dateValue", e.Value?.ToString())' /></label><button class="button button-quiet" disabled="@State.Busy" @onclick='() => Command("dateToday")'>วันนี้</button></div>
+                    <fieldset class="date-calendar"><legend>ปีที่แสดงบนเอกสาร</legend><div><button aria-pressed="@(State.Date.Calendar == "buddhist" ? "true" : "false")" disabled="@State.Busy" @onclick='() => Command("dateCalendar", "buddhist")'>พ.ศ.</button><button aria-pressed="@(State.Date.Calendar == "gregorian" ? "true" : "false")" disabled="@State.Busy" @onclick='() => Command("dateCalendar", "gregorian")'>ค.ศ.</button></div></fieldset>
+                    <div class="date-format-label"><span>รูปแบบวันที่</span><Dropdown Id="stamp-format" Label="รูปแบบวันที่" Value="@State.Date.Format" Options="@DateFormatOptions" Disabled="@State.Busy" ValueChanged='value => Command("dateFormat", value)' /></div>
+                    <div class="date-preview"><span>ตัวอย่างบนเอกสาร</span><output aria-live="polite" aria-label="ตัวอย่างวันที่">@State.DatePreview</output></div>
+                    <div class="property-row date-style"><label>ขนาดตัวอักษร<input aria-label="ขนาดตัวอักษรวันที่" type="number" min="8" max="72" value="@State.DateSize" disabled="@State.Busy" @onchange='e => Command("dateSize", e.Value?.ToString())' /></label><label>สีตัวอักษร<input aria-label="สีตัวอักษรวันที่" type="color" value="@State.DateColor" disabled="@State.Busy" @onchange='e => Command("dateColor", e.Value?.ToString())' /></label></div>
+                    <p class="date-placement-hint"><Icon Name="@(State.Selected?.Date is not null ? "move" : "cursor")" />@(State.Selected?.Date is not null ? "ลากแถบเหนือวันที่เพื่อย้ายตำแหน่ง" : "คลิกบนเอกสารเพื่อวางวันที่")</p>
+                    @if (State.Selected?.Date is not null)
+                    {
+                        <div class="date-actions"><button class="button button-soft" disabled="@State.Busy" @onclick='() => Command("tool", "date")'>วางอีกตำแหน่ง</button><button class="button button-quiet" aria-label="ลบวันที่" disabled="@State.Busy" @onclick='() => Command("delete")'><Icon Name="trash" /></button></div>
+                    }
+                    <button class="button button-quiet date-done" disabled="@State.Busy" @onclick='() => Command("finishDate")'>@(State.Selected?.Date is not null ? "เสร็จ" : "ยกเลิก")</button>
+                </div>
+            }
+            else if (ShowMarks)
             {
                 <div class="mark-properties-content"><h2>@(State.Selected?.IsMark == true ? "เครื่องหมายที่เลือก" : "วางเครื่องหมาย")</h2><p class="mark-subtitle">ปรับรูปแบบให้พอดีกับช่องในเอกสาร</p>
                 <MarkChoices Value="@SelectedMarkKind" Disabled="@State.Busy" OnChange='value => Command("markKind", value)' />
@@ -45,7 +64,7 @@
             }
             else if (State.Selected is { } selected)
             {
-                <div class="properties-content"><label>ข้อความที่เลือก<textarea aria-label="ข้อความที่เลือก" value="@selected.Text" @onchange='e => Patch("text", e.Value?.ToString())' rows="4"></textarea></label><label>ฟอนต์<select disabled><option>Sarabun · ภาษาไทย / English</option></select></label><div class="property-row"><label>ขนาดตัวอักษร<input aria-label="ขนาดตัวอักษร" type="number" min="8" max="72" value="@selected.Size" @onchange='e => Patch("size", e.Value?.ToString())' /></label><label>สีตัวอักษร<input aria-label="สีตัวอักษร" type="color" value="@selected.Color" @onchange='e => Patch("color", e.Value?.ToString())' /></label></div><label>การจัดแนว<select aria-label="การจัดแนว" value="@selected.Align" @onchange='e => Patch("align", e.Value?.ToString())'><option value="left">ชิดซ้าย</option><option value="center">กึ่งกลาง</option><option value="right">ชิดขวา</option></select></label><p class="field-help">กรอบปรับพอดีกับข้อความอัตโนมัติ<br />ปรับขนาดตัวอักษรจากช่องด้านบน<br />กด Enter เพื่อขึ้นบรรทัดใหม่</p><button class="button delete-button" @onclick='() => Command("delete")'><Icon Name="trash" /> ลบข้อความ</button></div>
+                <div class="properties-content"><label>ข้อความที่เลือก<textarea aria-label="ข้อความที่เลือก" value="@selected.Text" @onchange='e => Patch("text", e.Value?.ToString())' rows="4"></textarea></label><div class="font-field"><span>ฟอนต์</span><span class="read-only-font" aria-label="ฟอนต์ Sarabun">Sarabun · ภาษาไทย / English</span></div><div class="property-row"><label>ขนาดตัวอักษร<input aria-label="ขนาดตัวอักษร" type="number" min="8" max="72" value="@selected.Size" @onchange='e => Patch("size", e.Value?.ToString())' /></label><label>สีตัวอักษร<input aria-label="สีตัวอักษร" type="color" value="@selected.Color" @onchange='e => Patch("color", e.Value?.ToString())' /></label></div><div class="alignment-field"><span>การจัดแนว</span><Dropdown Label="การจัดแนว" Value="@selected.Align" Options="@AlignmentOptions" ValueChanged='value => Patch("align", value)' /></div><p class="field-help">กรอบปรับพอดีกับข้อความอัตโนมัติ<br />ปรับขนาดตัวอักษรจากช่องด้านบน<br />กด Enter เพื่อขึ้นบรรทัดใหม่</p><button class="button delete-button" @onclick='() => Command("delete")'><Icon Name="trash" /> ลบข้อความ</button></div>
             }
             else
             {
@@ -68,7 +87,19 @@
     private DotNetObjectReference<Editor>? Reference;
     private EditorState State = new();
     private bool Ready;
+    private string ZoomValue => State.FitZoom ? "fit" : State.Zoom.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    private IReadOnlyList<DropdownOption> ZoomOptions => AddCurrentZoom([new("fit", "พอดีหน้าจอ"), new("0.5", "50%"), new("0.75", "75%"), new("1", "100%"), new("1.25", "125%"), new("1.5", "150%"), new("2", "200%")]);
+    private IReadOnlyList<DropdownOption> MobileZoomOptions => AddCurrentZoom([new("fit", "พอดี"), new("0.75", "75%"), new("1", "100%"), new("1.5", "150%"), new("2", "200%")]);
+    private IReadOnlyList<DropdownOption> AddCurrentZoom(List<DropdownOption> options)
+    {
+        if (!State.FitZoom && !options.Any(option => option.Value == ZoomValue)) options.Add(new(ZoomValue, $"{Math.Round(State.Zoom * 100)}%"));
+        return options;
+    }
+    private IReadOnlyList<DropdownOption> PageOptions => Enumerable.Range(1, State.Pages).Select(page => new DropdownOption(page.ToString(), $"{page} / {State.Pages}")).ToArray();
+    private static readonly IReadOnlyList<DropdownOption> DateFormatOptions = [new("numeric", "ตัวเลข · วัน/เดือน/ปี"), new("short", "เดือนย่อ · 24 ก.ย."), new("long", "เดือนเต็ม · 24 กันยายน")];
+    private static readonly IReadOnlyList<DropdownOption> AlignmentOptions = [new("left", "ชิดซ้าย"), new("center", "กึ่งกลาง"), new("right", "ชิดขวา")];
     private bool MarkMenu;
+    private bool ShowDate => State.Tool == "date" || State.Selected?.Date is not null;
     private bool ShowMarks => State.Tool == "mark" || State.Selected?.IsMark == true;
     private string SelectedMarkKind => State.Selected?.IsMark == true ? State.Selected.Mark : State.MarkKind;
     private double SelectedMarkSize => State.Selected?.IsMark == true ? State.Selected.Size : State.MarkSize;
@@ -94,6 +125,10 @@
     public async ValueTask DisposeAsync() { if (Module is not null) { await Module.InvokeVoidAsync("dispose"); await Module.DisposeAsync(); } Reference?.Dispose(); }
     public sealed class EditorState
     {
+        public DateOptions Date { get; set; } = new();
+        public string DatePreview { get; set; } = "";
+        public double DateSize { get; set; } = 16;
+        public string DateColor { get; set; } = "#172433";
         public bool Loaded { get; set; }
         public bool Busy { get; set; }
         public string Filename { get; set; } = "";
@@ -112,8 +147,15 @@
         public bool CanRedo { get; set; }
         public SelectedText? Selected { get; set; }
     }
+    public sealed class DateOptions
+    {
+        public string Value { get; set; } = "";
+        public string Calendar { get; set; } = "buddhist";
+        public string Format { get; set; } = "numeric";
+    }
     public sealed class SelectedText
     {
+        public DateOptions? Date { get; set; }
         public bool IsMark { get; set; }
         public string Mark { get; set; } = "check";
         public bool IsSignature { get; set; }

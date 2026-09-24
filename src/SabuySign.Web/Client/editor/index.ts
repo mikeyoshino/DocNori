@@ -1,3 +1,4 @@
+import { formatDate, localDate, type DateStamp } from "./dates";
 import { installGestureZoom } from "./gesture-zoom";
 import { isMark, markSvg, type MarkKind } from "./marks";
 import {
@@ -43,6 +44,12 @@ let pageNumber = 1,
   width = 595,
   height = 842,
   downloadedRevision = -1;
+let dateStamp: DateStamp = {
+  value: localDate(),
+  calendar: "buddhist",
+  format: "numeric",
+};
+let dateColor = "#172433";
 let markKind: MarkKind = "check",
   markSize = 24,
   markColor = "#172c40",
@@ -83,6 +90,10 @@ async function notify() {
     markSize,
     markColor,
     continuous,
+    date: selected?.date ?? dateStamp,
+    datePreview: formatDate(selected?.date ?? dateStamp),
+    dateSize: selected?.date ? selected.size : session.defaultTextSize,
+    dateColor: selected?.date ? selected.color : dateColor,
     canUndo: session.canUndo,
     canRedo: session.canRedo,
     selected: selected
@@ -225,12 +236,14 @@ export async function init(ref: Bridge) {
           tool = "select";
         else session.selected = null;
         changed();
-      } else if (tool === "text") {
+      } else if (tool === "text" || tool === "date") {
         const rect = $("page-surface").getBoundingClientRect();
         session.add(
           pageNumber - 1,
           Math.max(0, Math.min(width - 220, (e.clientX - rect.left) / zoom)),
           Math.max(0, Math.min(height - 54, (e.clientY - rect.top) / zoom)),
+          tool === "date" ? dateStamp : undefined,
+          tool === "date" ? dateColor : undefined,
         );
         tool = "select";
         changed();
@@ -390,6 +403,8 @@ async function openFile(file: File) {
     session = new Session(layoutTextItem);
     pageNumber = 1;
     zoom = 1;
+    dateStamp = { value: localDate(), calendar: "buddhist", format: "numeric" };
+    dateColor = "#172433";
     fitZoom = true;
     tool = "select";
     markKind = "check";
@@ -635,8 +650,11 @@ function renderObjects() {
     text.value = item.text;
     text.spellcheck = false;
     text.wrap = "off";
-    text.setAttribute("aria-label", "ข้อความบนเอกสาร");
-    text.readOnly = item.id !== session.selected;
+    text.setAttribute(
+      "aria-label",
+      item.date ? "วันที่บนเอกสาร" : "ข้อความบนเอกสาร",
+    );
+    text.readOnly = !!item.date || item.id !== session.selected;
     Object.assign(text.style, {
       fontSize: `${item.size * zoom}px`,
       lineHeight: "1.6",
@@ -646,6 +664,7 @@ function renderObjects() {
     text.onpointerdown = (e) => e.stopPropagation();
     text.onclick = () => {
       if (session.selected !== item.id) {
+        tool = "select";
         session.selected = item.id;
         document
           .querySelectorAll(".text-object")
@@ -654,7 +673,7 @@ function renderObjects() {
         document
           .querySelectorAll<HTMLTextAreaElement>(".text-object textarea")
           .forEach((input) => (input.readOnly = true));
-        text.readOnly = false;
+        text.readOnly = !!item.date;
         void notify();
       }
     };
@@ -933,6 +952,42 @@ export async function command(action: string, value?: string) {
         changed();
         break;
       }
+      case "dateValue":
+      case "dateToday":
+      case "dateCalendar":
+      case "dateFormat":
+      case "dateSize":
+      case "dateColor": {
+        const selected = session.items.find(
+          (i) => i.id === session.selected && i.date,
+        );
+        const next = { ...(selected?.date ?? dateStamp) };
+        if (action === "dateValue") next.value = value ?? "";
+        if (action === "dateToday") next.value = localDate();
+        if (action === "dateCalendar")
+          next.calendar = value as DateStamp["calendar"];
+        if (action === "dateFormat") next.format = value as DateStamp["format"];
+        formatDate(next);
+        dateStamp = next;
+        if (action === "dateSize") session.setDefaultTextSize(Number(value));
+        if (action === "dateColor" && /^#[a-f0-9]{6}$/i.test(value ?? ""))
+          dateColor = value!;
+        if (selected)
+          session.update(selected.id, {
+            date: next,
+            size:
+              action === "dateSize" ? session.defaultTextSize : selected.size,
+            color: action === "dateColor" ? dateColor : selected.color,
+          });
+        error = "";
+        changed();
+        break;
+      }
+      case "finishDate":
+        session.selected = null;
+        tool = "select";
+        renderObjects();
+        break;
       case "finishMark":
         session.selected = null;
         tool = "select";
@@ -949,11 +1004,20 @@ export async function command(action: string, value?: string) {
       case "signature":
         if (doc) signatures.create();
         break;
-      case "tool":
+      case "tool": {
+        const selectedDate = session.items.find(
+          (i) => i.id === session.selected && i.date,
+        );
+        if (value === "date" && selectedDate?.date) {
+          dateStamp = { ...selectedDate.date };
+          dateColor = selectedDate.color;
+          session.setDefaultTextSize(selectedDate.size);
+        }
         tool = value ?? "select";
         if (tool !== "select") session.selected = null;
         renderObjects();
         break;
+      }
       case "undo":
         session.undo();
         changed();

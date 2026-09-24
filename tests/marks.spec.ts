@@ -1,3 +1,4 @@
+import { chooseDropdown } from "./helpers/dropdown";
 import { test, expect } from "@playwright/test";
 import { PDFDocument } from "pdf-lib";
 async function open(page: import("@playwright/test").Page) {
@@ -128,7 +129,7 @@ test("mobile single placement uses bottom controls without viewport overflow", a
   expect(actions!.x + actions!.width).toBeLessThanOrEqual(390);
   await page.getByRole("button", { name: "เสร็จ", exact: true }).click();
   await expect(page.locator(".mark-object.selected")).toHaveCount(0);
-  await page.getByLabel("หน้าเอกสาร", { exact: true }).selectOption("2");
+  await chooseDropdown(page, "หน้าเอกสาร", "2");
   await expect(page.locator(".mark-object")).toHaveCount(0);
 });
 

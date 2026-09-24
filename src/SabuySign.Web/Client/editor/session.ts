@@ -1,6 +1,8 @@
+import { formatDate, type DateStamp } from "./dates";
 import type { MarkKind } from "./marks";
 import type { SignatureData } from "../signatures/data";
 export interface TextItem {
+  date?: DateStamp;
   signature?: SignatureData;
   mark?: MarkKind;
   id: string;
@@ -19,6 +21,12 @@ export class Session {
     private readonly fitText: (item: TextItem) => TextItem = (item) => item,
   ) {}
   private textSize = 16;
+  get defaultTextSize() {
+    return this.textSize;
+  }
+  setDefaultTextSize(size: number) {
+    if (Number.isFinite(size)) this.textSize = Math.max(8, Math.min(72, size));
+  }
   private current: TextItem[] = [];
   private past: TextItem[][] = [];
   private future: TextItem[][] = [];
@@ -42,7 +50,7 @@ export class Session {
     this.future = [];
     this.revision++;
   }
-  add(page: number, x: number, y: number) {
+  add(page: number, x: number, y: number, date?: DateStamp, color = "#172433") {
     const id = crypto.randomUUID();
     this.commit([
       ...this.current,
@@ -53,9 +61,10 @@ export class Session {
         y,
         width: 220,
         height: 54,
-        text: "ข้อความ",
+        date: date ? structuredClone(date) : undefined,
+        text: date ? formatDate(date) : "ข้อความ",
         size: this.textSize,
-        color: "#172433",
+        color,
         align: "left",
       },
     ]);
@@ -72,6 +81,7 @@ export class Session {
     )
       this.textSize = Math.max(8, Math.min(72, patch.size));
     const next = { ...old, ...patch, id };
+    if (next.date) next.text = formatDate(next.date);
     if (JSON.stringify(old) === JSON.stringify(next)) return;
     this.commit(this.current.map((i) => (i.id === id ? next : i)));
   }
