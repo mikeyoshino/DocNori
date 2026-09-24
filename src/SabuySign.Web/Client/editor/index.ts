@@ -74,8 +74,9 @@ const $ = <T extends HTMLElement>(id: string) =>
 const frame = () =>
   new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 const dirty = () =>
-  (session.revision > 0 && session.revision !== downloadedRevision) ||
-  !!signatures?.count;
+  !shared?.expired &&
+  ((session.revision > 0 && session.revision !== downloadedRevision) ||
+    !!signatures?.count);
 async function notify() {
   const selected = session.items.find((i) => i.id === session.selected);
   shared?.update();
@@ -828,19 +829,39 @@ function renderObjects() {
     for (const [node, resize] of [
       [handle, false],
       [grip, true],
+      ...(item.signature ? [[el, false] as const] : []),
     ] as const)
       node.onpointerdown = (e) => {
-        if (busy || shared?.locked || (resize && !item.signature)) return;
+        if (
+          busy ||
+          shared?.locked ||
+          e.button !== 0 ||
+          (resize && !item.signature)
+        )
+          return;
+        if (node === el && (e.target as HTMLElement).closest("button")) return;
         e.preventDefault();
         e.stopPropagation();
         session.selected = item.id;
+        tool = "select";
+        editingTextId = null;
+        document
+          .querySelectorAll(".text-object.selected")
+          .forEach((n) => n.classList.remove("selected"));
         el.classList.add("selected");
         void notify();
         node.setPointerCapture(e.pointerId);
         const startX = e.clientX,
           startY = e.clientY;
+        let moved = false;
         let update: Partial<TextItem> = {};
         node.onpointermove = (ev) => {
+          if (
+            !moved &&
+            Math.hypot(ev.clientX - startX, ev.clientY - startY) < 4
+          )
+            return;
+          moved = true;
           const dx = (ev.clientX - startX) / zoom,
             dy = (ev.clientY - startY) / zoom;
           update = resize
@@ -872,15 +893,19 @@ function renderObjects() {
             el.style.setProperty(css, `${Number(value) * zoom}px`);
           }
         };
-        const finish = () => {
+        const finish = (commit: boolean) => {
           node.onpointermove = null;
           node.onpointerup = null;
           node.onpointercancel = null;
-          session.update(item.id, update);
-          changed();
+          node.onlostpointercapture = null;
+          if (moved && commit && !busy && !shared?.locked) {
+            session.update(item.id, update);
+            changed();
+          } else if (moved) renderObjects();
         };
-        node.onpointerup = finish;
-        node.onpointercancel = finish;
+        node.onpointerup = () => finish(true);
+        node.onpointercancel = () => finish(false);
+        node.onlostpointercapture = () => finish(false);
       };
     if (item.mark) {
       const mark = document.createElement("button");
@@ -906,11 +931,7 @@ function renderObjects() {
       img.src = `data:image/svg+xml,${encodeURIComponent(signatureSvg(item.signature))}`;
       img.alt = "ลายเซ็นบนเอกสาร";
       img.draggable = false;
-      img.onclick = () => {
-        session.selected = item.id;
-        renderObjects();
-        void notify();
-      };
+      el.onclick = (e) => e.stopPropagation();
       el.append(actions, img, grip);
     } else el.append(actions, text);
     root.append(el);

@@ -68,6 +68,22 @@ for (const mobile of [false, true]) {
     await expect(guest.locator("#signing-finish")).toBeHidden();
     await draw(guest);
     await place(guest, 120, 180);
+    const draft = guest.locator(".signature-object");
+    const before = (await draft.boundingBox())!;
+    await guest.mouse.move(
+      before.x + before.width / 2,
+      before.y + before.height / 2,
+    );
+    await guest.mouse.down();
+    await guest.mouse.move(
+      before.x + before.width / 2 + 20,
+      before.y + before.height / 2 + 25,
+      { steps: 5 },
+    );
+    await guest.mouse.up();
+    await expect
+      .poll(async () => (await draft.boundingBox())!.x)
+      .toBeCloseTo(before.x + 20, 0);
     if (mobile) await chooseDropdown(guest, "หน้าเอกสาร", "2");
     else await guest.locator("#thumbnails button").nth(1).click();
     await place(guest, 150, 250);
@@ -150,6 +166,29 @@ for (const mobile of [false, true]) {
       path: `artifacts/shared-signing-${mobile ? "mobile" : "desktop"}-final.png`,
       fullPage: true,
     });
+    const editorUrl = page.url();
+    await page.locator("#signing-delete").click();
+    await page.locator("#signing-confirm-cancel").click();
+    await expect(page).toHaveURL(editorUrl);
+    await expect(page.locator("#page-canvas")).toBeVisible();
+    if (!mobile) {
+      await page.route("**/api/signing/*", async (route) => {
+        if (route.request().method() === "DELETE")
+          await route.fulfill({ status: 503, body: "temporarily unavailable" });
+        else await route.continue();
+      });
+      await page.locator("#signing-delete").click();
+      await page.locator("#signing-confirm-accept").click();
+      await expect(page.locator("#signing-message")).toContainText(
+        "เชื่อมต่อไม่สำเร็จ",
+      );
+      await expect(page.locator("#signing-delete")).toBeEnabled();
+      await expect(page).toHaveURL(editorUrl);
+      await expect(page.locator("#page-canvas")).toBeVisible();
+      await page.unroute("**/api/signing/*");
+    }
+    const unloadDialogs: string[] = [];
+    page.on("dialog", (d) => unloadDialogs.push(d.type()));
     await page.locator("#signing-delete").click();
     await page.locator("#signing-confirm-accept").click();
     await expect(guest.locator("#signing-state")).toHaveText(
@@ -158,6 +197,11 @@ for (const mobile of [false, true]) {
         timeout: 15000,
       },
     );
+    await expect(page).toHaveURL(/\/tools\/fill-sign$/);
+    await expect(
+      page.getByRole("button", { name: "เลือกไฟล์ PDF", exact: true }),
+    ).toBeEnabled();
+    expect(unloadDialogs).not.toContain("beforeunload");
     expect(errors).toEqual([]);
     await context.close();
   });

@@ -570,12 +570,20 @@ export class SigningSession {
       ))
     )
       return;
-    await this.request("", { method: "DELETE" });
-    sessionStorage.removeItem(`docnori-signing:${this.credentials.id}`);
-    this.expired = true;
-    this.pollAbort?.abort();
+    this.working = true;
     this.update();
-    this.message("ลบเอกสารแล้ว ลิงก์นี้ใช้ไม่ได้อีก");
+    try {
+      await this.request("", { method: "DELETE" });
+      sessionStorage.removeItem(`docnori-signing:${this.credentials.id}`);
+      this.expired = true;
+      this.hooks.clear();
+      this.dispose();
+      location.replace("/tools/fill-sign");
+    } catch (e) {
+      this.working = false;
+      this.update();
+      throw e;
+    }
   }
   update() {
     if (

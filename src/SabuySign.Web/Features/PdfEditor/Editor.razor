@@ -63,7 +63,7 @@
             <div class="panel-title"><Icon Name="@(State.Selected?.IsSignature == true ? "pen" : "text")" /> @(State.Selected?.IsSignature == true ? "ลายเซ็น" : "ข้อความ")</div>
             @if (State.Selected is { IsSignature: true } signature)
             {
-                <div class="properties-content"><h3>ลายเซ็นที่เลือก</h3><p class="field-help">ลากแถบด้านบนเพื่อย้าย<br />ลากมุมล่างขวาเพื่อปรับขนาดโดยคงสัดส่วน</p><label>ความกว้าง<input aria-label="ความกว้างลายเซ็น" type="number" min="20" value="@Math.Round(signature.Width)" @onchange='e => Patch("width", e.Value?.ToString())' /></label><button class="button delete-button" @onclick='() => Command("delete")'><Icon Name="trash" /> ลบลายเซ็น</button></div>
+                <div class="properties-content"><h3>ลายเซ็นที่เลือก</h3><p class="field-help">ลากที่ลายเซ็นเพื่อย้ายตำแหน่ง<br />ลากมุมล่างขวาเพื่อปรับขนาดโดยคงสัดส่วน</p><label>ความกว้าง<input aria-label="ความกว้างลายเซ็น" type="number" min="20" value="@Math.Round(signature.Width)" @onchange='e => Patch("width", e.Value?.ToString())' /></label><button class="button delete-button" @onclick='() => Command("delete")'><Icon Name="trash" /> ลบลายเซ็น</button></div>
             }
             else if (State.Selected is { } selected)
             {

@@ -80,3 +80,4 @@
 .signing-points{display:flex;flex-wrap:wrap;gap:4px}.signing-points .button{padding:4px 8px;font-size:12px;margin:0;min-height:36px}.signing-page-count{display:block;margin-top:4px;color:#246b48;font-size:11px}
 @media(max-width:700px){.shared-signing .editor-mobile-history{display:none}.signing-points .button{min-height:44px}.shared-signing .editor-header-actions .button{padding:8px}}
 @media(max-width:700px){.shared-signing-closed .editor-toolbar{display:none}}
+.signature-object{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}.signature-object:active{cursor:grabbing}.signature-object img{cursor:inherit;touch-action:none;-webkit-user-drag:none}

@@ -61,6 +61,23 @@ test("desktop save, reusable placement, proportional resize, undo and vector PDF
   await asset.click();
   await page.locator("#page-surface").click({ position: { x: 140, y: 200 } });
   await expect(page.locator(".signature-object")).toHaveCount(1);
+  const ink = page.locator(".signature-object img");
+  const start = (await ink.boundingBox())!;
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    start.x + start.width / 2 + 45,
+    start.y + start.height / 2 + 30,
+    { steps: 8 },
+  );
+  await page.mouse.up();
+  const moved = (await ink.boundingBox())!;
+  expect(moved.x - start.x).toBeCloseTo(45, 0);
+  expect(moved.y - start.y).toBeCloseTo(30, 0);
+  await page.getByRole("button", { name: "ย้อนกลับ", exact: true }).click();
+  expect((await ink.boundingBox())!.x).toBeCloseTo(start.x, 0);
+  await page.getByRole("button", { name: "ทำซ้ำ", exact: true }).click();
+  await ink.click();
   const before = (await page.locator(".signature-object").boundingBox())!;
   await page.getByLabel("ความกว้างลายเซ็น").fill("150");
   await page.getByLabel("ความกว้างลายเซ็น").blur();
