@@ -74,7 +74,7 @@ const $ = <T extends HTMLElement>(id: string) =>
 const frame = () =>
   new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 const dirty = () =>
-  !shared?.expired &&
+  !shared?.closed &&
   ((session.revision > 0 && session.revision !== downloadedRevision) ||
     !!signatures?.count);
 async function notify() {

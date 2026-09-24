@@ -5,6 +5,23 @@
 @inject IJSRuntime JS
 <PageTitle>กรอกข้อความและเซ็น PDF ออนไลน์ฟรี — DocNory</PageTitle>
 <div id="signing-loading" class="signing-loading" hidden><h2 id="signing-loading-text">กำลังเปิดเอกสารสำหรับเซ็นร่วมกัน…</h2><a href="/tools/fill-sign">กลับไปเครื่องมือเซ็นเอกสาร</a></div>
+<div id="signing-outcome" hidden>
+    <SiteNav />
+    <main class="signing-outcome-main" aria-labelledby="signing-outcome-title">
+        <div class="signing-outcome-icon"><Icon Name="lock" /></div>
+        <p class="eyebrow">เซ็นเอกสารร่วมกัน</p>
+        <h1 id="signing-outcome-title" tabindex="-1"></h1>
+        <p id="signing-outcome-description"></p>
+        <p id="signing-outcome-drafts" class="signing-outcome-note" hidden>ลายเซ็นที่ยังไม่ยืนยันไม่ได้รวมอยู่ในเอกสาร</p>
+        <p id="signing-outcome-expiry"></p>
+        <div class="signing-outcome-actions">
+            <button id="signing-outcome-download" class="button button-blue" @onclick='() => Command("preview")'><Icon Name="download" /> ดาวน์โหลด PDF</button>
+            <a class="button button-soft" href="/tools/fill-sign">กลับไปเครื่องมือเซ็นเอกสาร</a>
+        </div>
+        <button id="signing-outcome-delete" class="button button-quiet" hidden><Icon Name="trash" /> ลบเอกสาร</button>
+        <p id="signing-outcome-message" role="status"></p>
+    </main>
+</div>
 <input id="pdf-file" type="file" accept="application/pdf,.pdf" disabled="@(!Ready)" hidden />
 <div class="landing" hidden="@State.Loaded">
     <ToolStart Tool="@(ToolCatalog.Tools.First(t => t.Id == "fill-sign"))" Ready="Ready" Busy="State.Busy" OnOpenPdf="Pick" />

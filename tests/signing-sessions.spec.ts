@@ -126,11 +126,15 @@ for (const mobile of [false, true]) {
       "ยืนยันแล้ว 3 จุด",
       { timeout: 15000 },
     );
+    await place(guest, 100, 120);
     await page.locator("#signing-finish").click();
     await page.locator("#signing-confirm-accept").click();
     await expect(guest.locator("#signing-state")).toHaveText("พร้อมดาวน์โหลด", {
       timeout: 15000,
     });
+    await expect(guest.locator("#signing-outcome")).toBeVisible();
+    await expect(guest.locator(".editor-app")).toBeHidden();
+    await expect(guest.locator("#signing-outcome-drafts")).toBeVisible();
     await guest.reload();
     await expect(guest.locator("#signing-state")).toHaveText("พร้อมดาวน์โหลด");
     await guest
@@ -166,30 +170,44 @@ for (const mobile of [false, true]) {
       path: `artifacts/shared-signing-${mobile ? "mobile" : "desktop"}-final.png`,
       fullPage: true,
     });
+    const expiredTab = await context.newPage();
+    await expiredTab.route("**/api/signing/*/state", async (route) => {
+      const response = await route.fetch();
+      const state = await response.json();
+      state.session.expiresAt = "2020-01-01T00:00:00Z";
+      await route.fulfill({ response, json: state });
+    });
+    await expiredTab.goto(link);
+    await expect(expiredTab.locator("#signing-outcome-title")).toHaveText(
+      "ลิงก์เอกสารหมดอายุแล้ว",
+    );
+    await expect(expiredTab.locator("#signing-outcome-download")).toBeHidden();
+    await expect(expiredTab.locator(".editor-app")).toBeHidden();
+    await expiredTab.close();
     const editorUrl = page.url();
-    await page.locator("#signing-delete").click();
+    await page.locator("#signing-outcome-delete").click();
     await page.locator("#signing-confirm-cancel").click();
     await expect(page).toHaveURL(editorUrl);
-    await expect(page.locator("#page-canvas")).toBeVisible();
+    await expect(page.locator("#signing-outcome")).toBeVisible();
     if (!mobile) {
       await page.route("**/api/signing/*", async (route) => {
         if (route.request().method() === "DELETE")
           await route.fulfill({ status: 503, body: "temporarily unavailable" });
         else await route.continue();
       });
-      await page.locator("#signing-delete").click();
+      await page.locator("#signing-outcome-delete").click();
       await page.locator("#signing-confirm-accept").click();
       await expect(page.locator("#signing-message")).toContainText(
         "เชื่อมต่อไม่สำเร็จ",
       );
-      await expect(page.locator("#signing-delete")).toBeEnabled();
+      await expect(page.locator("#signing-outcome-delete")).toBeEnabled();
       await expect(page).toHaveURL(editorUrl);
-      await expect(page.locator("#page-canvas")).toBeVisible();
+      await expect(page.locator("#signing-outcome")).toBeVisible();
       await page.unroute("**/api/signing/*");
     }
     const unloadDialogs: string[] = [];
     page.on("dialog", (d) => unloadDialogs.push(d.type()));
-    await page.locator("#signing-delete").click();
+    await page.locator("#signing-outcome-delete").click();
     await page.locator("#signing-confirm-accept").click();
     await expect(guest.locator("#signing-state")).toHaveText(
       "session ปิดแล้ว",
@@ -197,6 +215,10 @@ for (const mobile of [false, true]) {
         timeout: 15000,
       },
     );
+    await expect(guest.locator("#signing-outcome-title")).toHaveText(
+      "เจ้าของลบเอกสารนี้แล้ว",
+    );
+    await expect(guest.locator(".editor-app")).toBeHidden();
     await expect(page).toHaveURL(/\/tools\/fill-sign$/);
     await expect(
       page.getByRole("button", { name: "เลือกไฟล์ PDF", exact: true }),
@@ -206,3 +228,13 @@ for (const mobile of [false, true]) {
     await context.close();
   });
 }
+
+test("invalid invitation shows only the status page", async ({ page }) => {
+  await page.goto("/sign-together?session=missing");
+  await expect(page.locator("#signing-outcome-title")).toHaveText(
+    "เปิดเอกสารไม่ได้",
+  );
+  await expect(page.locator(".landing")).toBeHidden();
+  await expect(page.locator(".editor-app")).toBeHidden();
+  await expect(page.locator("#signing-loading")).toBeHidden();
+});

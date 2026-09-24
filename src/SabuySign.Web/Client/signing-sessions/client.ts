@@ -52,6 +52,10 @@ export class SigningSession {
   working = false;
   online = false;
   expired = false;
+  private unavailable: "deleted" | "expired" | "unknown" | "invalid" =
+    "unknown";
+  private hadDrafts = false;
+  private outcome = "";
   private version = "";
   private notice = "";
   get active() {
@@ -98,6 +102,7 @@ export class SigningSession {
     listen("signing-submit", () => this.submit());
     listen("signing-finish", () => this.finish());
     listen("signing-delete", () => this.remove());
+    listen("signing-outcome-delete", () => this.remove());
     listen("signing-add", () => hooks.draw());
     document.querySelectorAll("[data-close-signing]").forEach((el) =>
       el.addEventListener("click", () => el.closest("dialog")!.close(), {
@@ -135,6 +140,7 @@ export class SigningSession {
     this.notice = text;
     for (const id of [
       "signing-message",
+      "signing-outcome-message",
       "signing-dialog-message",
       "signing-create-message",
     ]) {
@@ -156,6 +162,11 @@ export class SigningSession {
     });
     if (!response.ok) {
       if (response.status === 404) {
+        this.unavailable = this.snapshot
+          ? Date.now() >= Date.parse(this.snapshot.session.expiresAt)
+            ? "expired"
+            : "deleted"
+          : "unknown";
         this.expired = true;
         this.update();
         throw new Error(
@@ -190,6 +201,7 @@ export class SigningSession {
   }
   async restore() {
     if (location.pathname != "/sign-together") return;
+    document.documentElement.classList.add("signing-terminal");
     $("signing-loading").hidden = false;
     try {
       const parts = location.hash.slice(1).split(".");
@@ -244,7 +256,9 @@ export class SigningSession {
       );
       await this.start();
     } catch (e) {
+      if (!this.expired) this.unavailable = "invalid";
       this.expired = true;
+      $("signing-loading").hidden = true;
       this.message(e instanceof Error ? e.message : "เปิดเอกสารไม่ได้", true);
       $("signing-loading-text").textContent =
         "เปิดเอกสารไม่ได้ กรุณาตรวจสอบลิงก์หรือขอลิงก์จากเจ้าของอีกครั้ง";
@@ -388,6 +402,11 @@ export class SigningSession {
     this.version = r.headers.get("X-State-Version") ?? "";
     const changed =
       this.snapshot?.session.revision !== snapshot.session.revision;
+    if (snapshot.session.closed && !this.snapshot?.session.closed) {
+      this.hadDrafts = this.hooks.drafts().length > 0;
+      this.hooks.clear();
+      this.pending = undefined;
+    }
     this.snapshot = snapshot;
     this.confirmed = items;
     this.online = true;
@@ -589,8 +608,12 @@ export class SigningSession {
     if (
       this.snapshot &&
       Date.now() >= Date.parse(this.snapshot.session.expiresAt)
-    )
+    ) {
+      this.unavailable = "expired";
       this.expired = true;
+    }
+    if (this.expired && this.hooks.drafts().length) this.hadDrafts = true;
+    this.renderOutcome();
     document.documentElement.classList.toggle("shared-signing", this.active);
     document.documentElement.classList.toggle(
       "shared-signing-closed",
@@ -698,6 +721,46 @@ export class SigningSession {
       ? "session นี้ปิดแล้ว"
       : `${snapshot?.members.filter((m) => m.online).length ?? 0} คนออนไลน์ · ยืนยันแล้ว ${this.confirmed.length} จุด`;
   }
+  private renderOutcome() {
+    const terminal = this.expired || !!this.snapshot?.session.closed;
+    document.documentElement.classList.toggle("signing-terminal", terminal);
+    $("signing-outcome").hidden = !terminal;
+    if (!terminal) return;
+    $("signing-loading").hidden = true;
+    const state = this.expired ? this.unavailable : "closed";
+    const titles = {
+      closed: "เอกสารพร้อมดาวน์โหลด",
+      deleted: "เจ้าของลบเอกสารนี้แล้ว",
+      expired: "ลิงก์เอกสารหมดอายุแล้ว",
+      unknown: "เอกสารนี้ไม่พร้อมใช้งานแล้ว",
+      invalid: "เปิดเอกสารไม่ได้",
+    };
+    $("signing-outcome-title").textContent = titles[state];
+    $("signing-outcome-description").textContent =
+      state === "closed"
+        ? "ปิดรับลายเซ็นแล้ว ดาวน์โหลดเอกสารพร้อมลายเซ็นที่ยืนยันเรียบร้อยแล้วได้ที่นี่"
+        : state === "deleted"
+          ? "เอกสารถูกลบแล้ว ลิงก์นี้ไม่สามารถเปิดหรือดาวน์โหลดเอกสารได้อีก"
+          : state === "expired"
+            ? "เอกสารหมดอายุแล้ว กรุณาติดต่อเจ้าของเพื่อขอลิงก์ใหม่"
+            : "กรุณาตรวจสอบลิงก์ หรือติดต่อเจ้าของเอกสารเพื่อขอลิงก์ใหม่";
+    $("signing-outcome-download").hidden = this.expired;
+    $("signing-outcome-delete").hidden =
+      this.expired || !this.credentials?.owner;
+    $<HTMLButtonElement>("signing-outcome-delete").disabled = this.working;
+    $("signing-outcome-drafts").hidden = !this.hadDrafts;
+    $("signing-outcome-expiry").textContent =
+      !this.expired && this.snapshot
+        ? `ดาวน์โหลดได้ถึง ${time(this.snapshot.session.expiresAt)}`
+        : "";
+    if (this.outcome !== state) {
+      this.outcome = state;
+      document
+        .querySelectorAll<HTMLDialogElement>("dialog[open]")
+        .forEach((d) => d.close());
+      $("signing-outcome-title").focus();
+    }
+  }
   render(root: HTMLElement, page: number, zoom: number) {
     for (const item of this.confirmed.filter((i) => i.page === page)) {
       const el = document.createElement("div");
@@ -724,6 +787,7 @@ export class SigningSession {
     document.documentElement.classList.remove(
       "shared-signing",
       "shared-signing-closed",
+      "signing-terminal",
     );
   }
 }
