@@ -25,7 +25,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   const page = await context.newPage();
   await page.goto(response.url());
   await expect(
-    page.getByRole("heading", { name: "จัดการเอกสาร ให้เป็นเรื่องง่าย" }),
+    page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
   await expect(page.locator(".document-tool")).toHaveCount(9);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
@@ -35,7 +35,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   for (const [slug, title] of [
     ["merge", "รวมไฟล์ PDF"],
     ["split", "แยกไฟล์ PDF"],
-    ["fill-sign", "เซ็น PDF ออนไลน์ และกรอกข้อความ"],
+    ["fill-sign", "กรอกข้อความภาษาไทยและเซ็น PDF ออนไลน์"],
   ]) {
     const response = await page.goto(
       new URL(`/tools/${slug}`, page.url()).href,
@@ -46,7 +46,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
     ).toBeVisible();
     await expect(page).toHaveTitle(
       slug === "fill-sign"
-        ? "เซ็น PDF ออนไลน์ฟรี พร้อมกรอกข้อความ — DocNory"
+        ? "กรอกข้อความและเซ็น PDF ออนไลน์ฟรี — DocNory"
         : `${title} — DocNory`,
     );
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -78,6 +78,60 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   const alias = await request.get("/tools/merg", { maxRedirects: 0 });
   expect(alias.status()).toBe(301);
   expect(alias.headers().location).toBe("/tools/merge");
+});
+
+test("target pages expose consistent structured data without JavaScript", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  for (const path of ["/", "/tools/fill-sign"]) {
+    await page.goto(path);
+    const canonical = await page
+      .locator('link[rel="canonical"]')
+      .getAttribute("href");
+    const schema = JSON.parse(
+      await page.locator('script[type="application/ld+json"]').innerText(),
+    );
+    expect(schema["@context"]).toBe("https://schema.org");
+    const nodes = schema["@graph"];
+    expect(nodes.find((node: any) => node["@type"] === "WebPage").url).toBe(
+      canonical,
+    );
+    expect(
+      nodes.some((node: any) => ["FAQPage", "HowTo"].includes(node["@type"])),
+    ).toBe(false);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
+      "content",
+      "DocNory",
+    );
+    await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute(
+      "content",
+      await page.title(),
+    );
+    if (path === "/") {
+      expect(nodes.find((node: any) => node["@type"] === "WebSite").name).toBe(
+        "DocNory",
+      );
+      await expect(page).toHaveTitle(
+        "เครื่องมือจัดการ PDF ออนไลน์ รองรับภาษาไทย — DocNory",
+      );
+    } else {
+      const app = nodes.find((node: any) => node["@type"] === "WebApplication");
+      expect(app.url).toBe(canonical);
+      expect(app.offers.price).toBe(0);
+      expect(app.aggregateRating).toBeUndefined();
+      expect(
+        nodes.find((node: any) => node["@type"] === "BreadcrumbList")
+          .itemListElement[1].item,
+      ).toBe(canonical);
+      await expect(
+        page.getByRole("link", { name: "รวมไฟล์ PDF ก่อนเซ็น", exact: true }),
+      ).toBeVisible();
+    }
+  }
+  await context.close();
 });
 
 test("signing page explains the real workflow and static assets can be cached", async ({

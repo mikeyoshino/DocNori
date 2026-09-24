@@ -16,7 +16,7 @@ test("local-only fill, undo, preview and download survives export; reload clears
   ).toBeEnabled();
   await expect(
     page.getByRole("heading", {
-      name: "เซ็น PDF ออนไลน์ และกรอกข้อความ",
+      name: "กรอกข้อความภาษาไทยและเซ็น PDF ออนไลน์",
       exact: true,
     }),
   ).toBeVisible();
@@ -73,7 +73,7 @@ test("local-only fill, undo, preview and download survives export; reload clears
   await page.reload();
   await expect(
     page.getByRole("heading", {
-      name: "เซ็น PDF ออนไลน์ และกรอกข้อความ",
+      name: "กรอกข้อความภาษาไทยและเซ็น PDF ออนไลน์",
       exact: true,
     }),
   ).toBeVisible();
@@ -157,7 +157,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
   ).toBeVisible();
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "จัดการเอกสาร ให้เป็นเรื่องง่าย" }),
+    page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
   await expect(page.locator(".document-tool")).toHaveCount(9);
   await expect(page.locator(".document-tool.upcoming")).toHaveCount(4);
@@ -251,7 +251,8 @@ test("cards navigate to dedicated tool pages before asking for a file", async ({
     await expect(page).toHaveURL(new RegExp(`/tools/${id}$`));
     await expect(
       page.getByRole("heading", {
-        name: id === "fill-sign" ? "เซ็น PDF ออนไลน์ และกรอกข้อความ" : name,
+        name:
+          id === "fill-sign" ? "กรอกข้อความภาษาไทยและเซ็น PDF ออนไลน์" : name,
         exact: true,
       }),
     ).toBeVisible();
@@ -284,7 +285,7 @@ test("cards navigate to dedicated tool pages before asking for a file", async ({
   await page.reload();
   await expect(
     page.getByRole("heading", {
-      name: "เซ็น PDF ออนไลน์ และกรอกข้อความ",
+      name: "กรอกข้อความภาษาไทยและเซ็น PDF ออนไลน์",
       exact: true,
     }),
   ).toBeVisible();

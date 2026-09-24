@@ -1,10 +1,10 @@
-<PageTitle>@(Tool.Id == "fill-sign" ? "เซ็น PDF ออนไลน์ฟรี พร้อมกรอกข้อความ" : Tool.Name) — DocNory</PageTitle>
+<PageTitle>@(Tool.Id == "fill-sign" ? "กรอกข้อความและเซ็น PDF ออนไลน์ฟรี" : Tool.Name) — DocNory</PageTitle>
 <SiteNav />
 <main class="tool-start category-@Tool.Category">
     <nav class="tool-breadcrumb" aria-label="เส้นทางนำทาง"><a href="/">หน้าแรก</a><span aria-hidden="true">/</span><span>@Tool.Name</span></nav>
     <section class="tool-start-intro">
         <span class="tool-card-icon"><ToolArtwork Name="@Tool.Icon" /></span>
-        <h1>@(Tool.Id == "fill-sign" ? "เซ็น PDF ออนไลน์ และกรอกข้อความ" : Tool.Name)</h1>
+        <h1>@(Tool.Id == "fill-sign" ? "กรอกข้อความภาษาไทยและเซ็น PDF ออนไลน์" : Tool.Name)</h1>
         @if (Tool.Id == "fill-sign")
         {
             <p>วางลายเซ็นและเพิ่มข้อความภาษาไทยลงใน PDF ได้จากเบราว์เซอร์ ไม่ต้องสมัครสมาชิก เมื่อเสร็จแล้วตรวจไฟล์และดาวน์โหลดกลับไปใช้</p>
@@ -38,6 +38,17 @@
                 <article><h3>เอกสารของคุณอยู่ที่ไหน?</h3><p>ไฟล์ PDF เปิดและประมวลผลในเบราว์เซอร์บนเครื่องของคุณ ไม่อัปโหลดเอกสารหรือเก็บร่างไว้ในบัญชี หากใช้มือถือวาดลายเซ็น ระบบจะส่งเฉพาะข้อมูลลายเซ็นที่เข้ารหัสเพื่อเชื่อมกับคอมพิวเตอร์ชั่วคราว</p></article>
             </div>
         </section>
+        @if (Tool.Id == "fill-sign")
+        {
+            <section class="tool-information" aria-labelledby="fill-sign-questions">
+                <h2 id="fill-sign-questions">คำถามเกี่ยวกับการกรอกและเซ็น PDF</h2>
+                <div class="tool-information-grid">
+                    <article><h3>กรอกข้อความภาษาไทยใน PDF ได้ไหม?</h3><p>พิมพ์ข้อความลง PDF ได้ทั้งภาษาไทยและอังกฤษ เพื่อกรอกชื่อ ที่อยู่ และรายละเอียดเมื่อต้องกรอกแบบฟอร์ม PDF เป็นการเพิ่มข้อความบนหน้าเอกสาร ไม่ใช่การแก้ไขข้อความเดิมในไฟล์ ตรวจตำแหน่งและข้อความในตัวอย่างก่อนดาวน์โหลดทุกครั้ง</p></article>
+                    <article><h3>เซ็น PDF ฟรีและต้องสมัครสมาชิกไหม?</h3><p>เครื่องมือกรอกและเซ็น PDF ใช้งานฟรี ไม่ต้องสมัครสมาชิก เปิดไฟล์ได้สูงสุด 25 MB และ 100 หน้า งานไม่มีการเก็บร่าง จึงควรดาวน์โหลดเอกสารที่เสร็จแล้วก่อนปิดหรือรีเฟรชหน้า</p></article>
+                    <article><h3>ต้องเตรียมเอกสารหลายไฟล์ก่อนเซ็นอย่างไร?</h3><p>ใช้เครื่องมือ<a href="/tools/merge">รวมไฟล์ PDF ก่อนเซ็น</a> หากต้องการเอกสารฉบับเดียว หรือ<a href="/tools/split">แยกหน้า PDF ที่ต้องการเซ็น</a> แล้วนำไฟล์ที่ดาวน์โหลดมาเปิดในหน้านี้</p></article>
+                </div>
+            </section>
+        }
     }
 </main>
 @code {
