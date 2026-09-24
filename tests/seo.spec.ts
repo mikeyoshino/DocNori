@@ -1,5 +1,37 @@
 import { test, expect } from "@playwright/test";
 
+test("AdSense loader is in the head of every public page and allowed by CSP", async ({
+  request,
+}) => {
+  for (const path of [
+    "/",
+    "/tools/fill-sign",
+    "/tools/merge",
+    "/tools/missing",
+  ]) {
+    const response = await request.get(path);
+    const html = await response.text();
+    const csp = response.headers()["content-security-policy"];
+    const nonce = /'nonce-([^']+)'/.exec(csp)?.[1];
+    expect(nonce).toBeTruthy();
+    const script =
+      /<script\b[^>]*src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-1030637351071742"[^>]*><\/script>/.exec(
+        html,
+      )?.[0];
+    expect(script).toBeTruthy();
+    expect(script).toContain("async");
+    expect(script).toContain('crossorigin="anonymous"');
+    expect(
+      script?.replace(/&#x([0-9a-f]+);/gi, (_, value) =>
+        String.fromCodePoint(parseInt(value, 16)),
+      ),
+    ).toContain(`nonce="${nonce}"`);
+    expect(html.indexOf(script!)).toBeLessThan(html.indexOf("</head>"));
+    expect(csp).toContain("'strict-dynamic'");
+    expect(csp).toContain("frame-src https:");
+  }
+});
+
 test("public pages contain real HTML and metadata without JavaScript", async ({
   browser,
   request,

@@ -13,7 +13,7 @@ app.Use(async (context, next) =>
 {
     var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24));
     context.Items["CspNonce"] = nonce;
-    context.Response.Headers.ContentSecurityPolicy = $"default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'";
+    context.Response.Headers.ContentSecurityPolicy = $"default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' 'nonce-{nonce}' 'strict-dynamic' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' blob: https:; connect-src 'self' https:; frame-src https:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'";
     context.Response.Headers.XContentTypeOptions = "nosniff";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
     context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";

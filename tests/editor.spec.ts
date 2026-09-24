@@ -5,10 +5,11 @@ test("local-only fill, undo, preview and download survives export; reload clears
   page,
 }) => {
   const outgoing: string[] = [];
-  const requests: string[] = [];
+  const requests: { url: string; body: string | null }[] = [];
   page.on("request", (r) => {
-    requests.push(r.url());
-    if (r.method() !== "GET") outgoing.push(r.url());
+    requests.push({ url: r.url(), body: r.postData() });
+    if (r.method() !== "GET" && new URL(r.url()).hostname === "127.0.0.1")
+      outgoing.push(r.url());
   });
   await page.goto("/tools/fill-sign");
   await expect(
@@ -53,10 +54,10 @@ test("local-only fill, undo, preview and download survives export; reload clears
   expect((await download).suggestedFilename()).toContain("-filled.pdf");
   expect(outgoing).toEqual([]);
   for (const request of requests) {
-    const url = new URL(request);
-    expect(url.hostname).toBe("127.0.0.1");
+    const url = new URL(request.url);
     expect(decodeURIComponent(url.href)).not.toMatch(/แบบฟอร์ม|ชื่อผู้สมัคร/);
-    expect(url.search).toBe("");
+    expect(request.body ?? "").not.toMatch(/แบบฟอร์ม|ชื่อผู้สมัคร/);
+    if (url.hostname === "127.0.0.1") expect(url.search).toBe("");
   }
   expect(await page.evaluate(() => caches.keys())).toEqual([]);
   expect(
