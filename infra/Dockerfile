@@ -17,8 +17,18 @@ COPY --from=client /source/src/SabuySign.Web/wwwroot/js/ src/SabuySign.Web/wwwro
 RUN dotnet publish src/SabuySign.Host -c Release -o /app
 RUN dotnet publish src/SabuySign.Media.Worker -c Release -o /worker
 
+FROM ubuntu:24.04 AS word-sandbox
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev libseccomp-dev linux-libc-dev
+COPY infra/word-pdf/sandbox.c /sandbox.c
+RUN gcc -O2 -Wall -Wextra -Werror /sandbox.c -lseccomp -o /word-sandbox
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/* && mkdir -p /media && chown $APP_UID:$APP_UID /media
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libreoffice-writer python3-uno libseccomp2 fonts-thai-tlwg fonts-noto-core fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea && rm -rf /var/lib/apt/lists/* && mkdir -p /media && chown $APP_UID:$APP_UID /media
+COPY --from=word-sandbox /word-sandbox /usr/local/bin/word-sandbox
+COPY infra/word-pdf/word_pdf.py /usr/local/lib/docnori/word_pdf.py
+COPY src/SabuySign.Web/wwwroot/fonts/*.ttf /usr/local/share/fonts/docnori/
+RUN fc-cache -f && mkdir -p /app/tmp && chown $APP_UID:$APP_UID /app/tmp && chmod 555 /tmp /var/tmp
+ENV TMPDIR=/app/tmp
 WORKDIR /app
 COPY --from=build /app .
 COPY --from=build /worker /app/worker

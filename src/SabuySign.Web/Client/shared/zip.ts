@@ -1,5 +1,5 @@
 // ZIP with stored entries: PDF and JPG entries are already compressed.
-// Names are generated ASCII names; no document bytes leave the browser.
+// Names are UTF-8; no document bytes leave the browser.
 const crcTable = Uint32Array.from({ length: 256 }, (_, value) => {
   for (let bit = 0; bit < 8; bit++)
     value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0);
@@ -19,6 +19,7 @@ export function zipFiles(files: { name: string; bytes: Uint8Array }[]) {
       l = new DataView(local.buffer);
     l.setUint32(0, 0x04034b50, true);
     l.setUint16(4, 20, true);
+    l.setUint16(6, 0x0800, true);
     l.setUint16(12, 33, true); // 1980-01-01
     l.setUint32(14, crc, true);
     l.setUint32(18, file.bytes.length, true);
@@ -30,6 +31,7 @@ export function zipFiles(files: { name: string; bytes: Uint8Array }[]) {
     c.setUint32(0, 0x02014b50, true);
     c.setUint16(4, 20, true);
     c.setUint16(6, 20, true);
+    c.setUint16(8, 0x0800, true);
     c.setUint16(14, 33, true);
     c.setUint32(16, crc, true);
     c.setUint32(20, file.bytes.length, true);

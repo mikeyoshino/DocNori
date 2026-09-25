@@ -39,13 +39,25 @@ public sealed class MediaWorker(MediaStore store, IConfiguration config, ILogger
         if (directory is null) return;
         var monitor = Task.Run(async () =>
         {
-            try { while (!run.IsCancellationRequested) { await Task.Delay(2000, run.Token); if (!await store.Renew(job, run.Token) || new DirectoryInfo(directory).EnumerateFiles().Sum(f => f.Length) > 134217728) { await run.CancelAsync(); break; } } }
+            try { while (!run.IsCancellationRequested) { await Task.Delay(2000, run.Token); if (!await store.Renew(job, run.Token) || DirectoryBytes(directory) > 134217728) { await run.CancelAsync(); break; } } }
             catch (OperationCanceledException) { }
             catch { await run.CancelAsync(); }
         }, CancellationToken.None);
         try
         {
             var input = store.Input(job.Id);
+            if (job.Spec.Kind == "word-pdf")
+            {
+                await using (var source = File.OpenRead(input))
+                await using (var copy = File.Create(Path.Combine(directory, "source.bin")))
+                    await source.CopyToAsync(copy, run.Token);
+                await Process("word-sandbox", [directory, "/usr/bin/python3", "/usr/local/lib/docnori/word_pdf.py", directory], run.Token);
+                var pdf = Path.Combine(directory, "document.pdf");
+                if (!File.Exists(pdf) || new FileInfo(pdf).Length is < 5 or > 134217728)
+                    throw new MediaFailure(400, "สร้าง PDF ไม่สำเร็จ กรุณาตรวจสอบไฟล์ Word");
+                if (await store.Finish(job, Path.GetRelativePath(store.DirectoryFor(job.Id), pdf), null, stop)) File.Delete(input);
+                return;
+            }
             var probe = await Process("ffprobe", ["-v", "error", "-protocol_whitelist", "file,pipe", "-format_whitelist", "mov,matroska,webm", "-show_entries", "format=duration:stream=codec_type,width,height", "-of", "json", input], run.Token);
             using var json = JsonDocument.Parse(probe);
             if (!json.RootElement.GetProperty("format").TryGetProperty("duration", out var durationNode) || !double.TryParse(durationNode.GetString(), CultureInfo.InvariantCulture, out var duration) || !double.IsFinite(duration) || duration <= 0 || duration > 3600.1) throw new MediaFailure(400, "วิดีโอต้องยาวไม่เกิน 1 ชั่วโมง");
@@ -76,9 +88,23 @@ public sealed class MediaWorker(MediaStore store, IConfiguration config, ILogger
         }
         catch (Exception e)
         {
-            if (!stop.IsCancellationRequested) await store.Finish(job, null, e is MediaFailure ? e.Message : "แปลงไม่สำเร็จ กรุณาเลือกไฟล์ใหม่หรือลองช่วงสั้นลง", stop);
+            if (!stop.IsCancellationRequested) await store.Finish(job, null, job.Spec.Kind == "word-pdf" ? "แปลง Word ไม่สำเร็จ ไฟล์อาจเสียหาย มีรหัสผ่าน หรือมีเนื้อหาที่ไม่รองรับ ลองบันทึกเป็น DOCX ใหม่แล้วเลือกอีกครั้ง" : e is MediaFailure ? e.Message : "แปลงไม่สำเร็จ กรุณาเลือกไฟล์ใหม่หรือลองช่วงสั้นลง", stop);
         }
         finally { await run.CancelAsync(); await monitor; }
+    }
+    private static long DirectoryBytes(string directory)
+    {
+        long bytes = 0;
+        try
+        {
+            foreach (var file in new DirectoryInfo(directory).EnumerateFiles("*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint }))
+            {
+                try { bytes += file.Length; }
+                catch (FileNotFoundException) { } // Converter temporary files may disappear during a snapshot.
+            }
+        }
+        catch (DirectoryNotFoundException) { } // Cancellation or profile cleanup raced this snapshot.
+        return bytes;
     }
     private async Task<string> Process(string tool, string[] args, CancellationToken ct)
     {

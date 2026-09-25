@@ -1,5 +1,5 @@
 export type MediaOptions = {
-  kind: "gif" | "mp3";
+  kind: "gif" | "mp3" | "word-pdf";
   start?: number;
   end?: number;
   edge?: number;
@@ -13,13 +13,18 @@ export class MediaSession {
   private requestAbort?: AbortController;
   private heartbeat?: ReturnType<typeof setInterval>;
   private lifetime = new AbortController();
-  constructor() {
+  constructor(hasLocalWork: () => boolean = () => false) {
     const signal = this.lifetime.signal;
+    let navigationApproved = false;
     addEventListener("pagehide", () => this.leave(), { signal });
     addEventListener(
       "beforeunload",
       (e: BeforeUnloadEvent) => {
-        if (this.id) {
+        if (navigationApproved) {
+          navigationApproved = false;
+          return;
+        }
+        if (this.id || hasLocalWork()) {
           e.preventDefault();
           e.returnValue = "";
         }
@@ -33,7 +38,7 @@ export class MediaSession {
           "a[href]",
         );
         if (
-          !this.id ||
+          (!this.id && !hasLocalWork()) ||
           !link ||
           link.hasAttribute("download") ||
           link.target === "_blank" ||
@@ -55,7 +60,9 @@ export class MediaSession {
           event.stopImmediatePropagation();
           return;
         }
-        this.leave();
+        // Cancel only on actual departure. A later navigation guard may keep
+        // the page open, in which case the server job must remain alive.
+        navigationApproved = true;
       },
       { signal, capture: true },
     );

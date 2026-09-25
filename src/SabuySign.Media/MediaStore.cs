@@ -28,7 +28,7 @@ public sealed class MediaStore
     public static string Hash(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
     public static void Validate(MediaSpec s)
     {
-        if (s.Kind is not ("gif" or "mp3") || s.Bytes <= 0 || s.Bytes > (s.Kind == "gif" ? 200_000_000 : 500_000_000)) throw new MediaFailure(400, "ไฟล์เกินขนาดที่รองรับ");
+        if (s.Kind is not ("gif" or "mp3" or "word-pdf") || s.Bytes <= 0 || s.Bytes > (s.Kind == "word-pdf" ? 50_000_000 : s.Kind == "gif" ? 200_000_000 : 500_000_000)) throw new MediaFailure(400, "ไฟล์เกินขนาดที่รองรับ");
         if (s.Kind == "gif" && (!double.IsFinite(s.Start) || !double.IsFinite(s.End) || s.Start < 0 || s.End <= s.Start || s.End - s.Start > 30.01 || s.End > 3600 || s.Edge is < 160 or > 720 || s.Fps is not (10 or 20))) throw new MediaFailure(400, "เลือกช่วงไม่เกิน 30 วินาที");
     }
     public async Task<NpgsqlConnection> Open(CancellationToken ct)

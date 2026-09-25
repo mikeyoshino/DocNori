@@ -35,6 +35,7 @@ jobs:
       - run: npm run test:e2e -- tests/seo.spec.ts
       - run: docker compose -f infra/compose.yaml config --quiet
       - run: docker compose -f infra/compose.yaml up --build -d web
+      - run: python3 scripts/test-word-sandbox.py "$(docker compose -f infra/compose.yaml images -q media-worker)"
       - run: npm run test:e2e
         env:
           APP_URL: http://127.0.0.1:8080

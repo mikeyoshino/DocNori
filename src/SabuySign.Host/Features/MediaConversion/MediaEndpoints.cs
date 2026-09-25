@@ -21,7 +21,7 @@ public static class MediaEndpoints
     {
         var store = app.Services.GetService<MediaStore>();
         app.MapGet("/api/media/config", () => Results.Ok(new { enabled = store is not null }));
-        if (store is null) { app.MapMethods("/api/media/{**path}", ["GET", "POST", "PUT"], () => Results.Json(new { error = "บริการแปลงวิดีโอยังไม่พร้อม กรุณาลองใหม่ภายหลัง" }, statusCode: 503)); return; }
+        if (store is null) { app.MapMethods("/api/media/{**path}", ["GET", "POST", "PUT"], () => Results.Json(new { error = "บริการแปลงไฟล์ยังไม่พร้อม กรุณาลองใหม่ภายหลัง" }, statusCode: 503)); return; }
         await store.Initialize(CancellationToken.None);
         var g = app.MapGroup("/api/media").RequireRateLimiting("media");
         g.AddEndpointFilter(async (context, next) =>
@@ -53,7 +53,7 @@ public static class MediaEndpoints
         {
             var job = await store.Get(id, Token(r), ct); if (job is null) return Results.NotFound(); if (job.State != "ready" || job.Output is null) return Results.StatusCode(409);
             var path = Path.Combine(store.DirectoryFor(id), job.Output); if (!File.Exists(path)) return Results.NotFound();
-            return Results.File(path, job.Spec.Kind == "gif" ? "image/gif" : "audio/mpeg", enableRangeProcessing: true);
+            return Results.File(path, job.Spec.Kind == "word-pdf" ? "application/pdf" : job.Spec.Kind == "gif" ? "image/gif" : "audio/mpeg", enableRangeProcessing: true);
         });
     }
 }

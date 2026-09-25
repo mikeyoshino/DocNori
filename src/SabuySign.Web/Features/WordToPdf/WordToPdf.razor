@@ -1,0 +1,44 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>แปลง Word เป็น PDF ออนไลน์ฟรี รองรับภาษาไทย — DocNori</PageTitle>
+<SiteNav />
+<main class="word-pdf category-convert" @ref="Root">
+    <input data-files type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple hidden />
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="convert" /></span>
+        <h1>แปลง Word เป็น PDF</h1>
+        <p>เอกสารพร้อมส่ง ในรูปแบบที่เปิดอ่านได้ทุกเครื่อง</p>
+        <div data-drop class="tool-file-drop"><Icon Name="upload" /><button data-choose class="button button-blue" disabled="@(!Ready)">เลือกไฟล์ Word <Icon Name="arrow" /></button><p>หรือลากไฟล์มาวางที่นี่</p><span class="file-limits">DOC, DOCX · สูงสุด 10 ไฟล์ · ไฟล์ละไม่เกิน 50 MB</span></div>
+        <p class="tool-local-note"><Icon Name="lock" /> ส่งไฟล์ไปแปลงชั่วคราว · ออกจากหน้าแล้วไฟล์จะถูกลบ</p>
+        <div class="gif-seo"><section><h2>แปลง DOC และ DOCX เป็น PDF ออนไลน์ฟรี</h2><p>เปลี่ยนเอกสาร Word เป็น PDF สำหรับส่งงาน ส่งต่อ หรือพิมพ์ ใช้ได้ทั้งภาษาไทยและภาษาอังกฤษ เลือกไฟล์ กดแปลง แล้วดูตัวอย่างก่อนดาวน์โหลด ไม่ต้องสมัครสมาชิก</p></section><section class="gif-seo-faq"><h2>คำถามที่พบบ่อย</h2><details><summary>รูปแบบเอกสารจะเหมือนเดิมไหม?</summary><p>ระบบแปลงข้อความ รูปภาพ และตารางตามรูปแบบใน Word ฟอนต์เฉพาะหรือรูปแบบซับซ้อนอาจมีระยะและการขึ้นหน้าต่างไป ควรตรวจตัวอย่าง PDF ก่อนนำไปใช้</p></details><details><summary>แปลงหลายไฟล์พร้อมกันได้ไหม?</summary><p>เลือกได้ครั้งละ 10 ไฟล์ ไฟล์ละไม่เกิน 50 MB ระบบจะแปลงทีละไฟล์ ดาวน์โหลดแยกหรือรวมเป็น ZIP ได้ โดยแต่ละเอกสารยังเป็น PDF คนละไฟล์</p></details><details><summary>รองรับไฟล์ที่มีรหัสผ่านไหม?</summary><p>กรุณาเปิดไฟล์ด้วย Word แล้วบันทึกสำเนาที่ไม่มีรหัสผ่านก่อน ไม่รองรับไฟล์ที่มีแมโครหรือเนื้อหาฝังบางชนิด</p></details><details><summary>ไฟล์ของฉันถูกเก็บไว้ไหม?</summary><p>ไฟล์ส่งไปแปลงบนเซิร์ฟเวอร์ชั่วคราว ไม่เก็บในบัญชี ออกจากหน้าแล้วงานจะหยุดและไฟล์จะถูกลบ หากการเชื่อมต่อขาด ระบบจะลบอัตโนมัติเมื่อหมดเวลา กรุณาดาวน์โหลดก่อนปิดหน้า</p></details></section><nav class="gif-seo-related" aria-label="เครื่องมือที่เกี่ยวข้อง"><a href="/tools/merge">รวม PDF</a><a href="/tools/fill-sign">กรอกและเซ็น PDF</a><a href="/tools/pdf-to-word">PDF เป็น Word</a></nav></div>
+    </section>
+    <section data-workspace class="wp-workspace" hidden aria-label="แปลงเอกสาร Word">
+        <div class="wp-files">
+            <header class="wp-heading"><div><span class="eyebrow">WORD → PDF</span><h1>เอกสารของคุณ</h1><p data-count></p></div><FileSourcePicker Label="เพิ่มไฟล์ Word" ShowCloudOptions="false" /></header>
+            <div data-list class="wp-list" aria-label="รายการไฟล์ Word"></div>
+            <button data-choose class="wp-add"><span aria-hidden="true">＋</span> เพิ่มไฟล์ Word</button>
+        </div>
+        <aside class="wp-panel"><span class="tool-card-icon"><ToolArtwork Name="convert" /></span><h2 data-heading>พร้อมแปลงเป็น PDF</h2><p data-summary>คงข้อความ รูปภาพ และตาราง<br />แล้วตรวจตัวอย่างก่อนดาวน์โหลด</p><div class="wp-details"><span><Icon Name="check" /> รองรับเอกสารภาษาไทย</span><span><Icon Name="check" /> แต่ละเอกสารเป็น PDF แยกไฟล์</span></div><button data-convert class="button button-blue full">แปลงเป็น PDF <Icon Name="arrow" /></button><a data-single-download class="button button-blue full" download hidden><Icon Name="download" /> ดาวน์โหลด PDF</a><button data-zip class="button button-blue full" hidden><Icon Name="download" /> ดาวน์โหลดทั้งหมด (ZIP)</button><button data-reset class="button button-quiet full" hidden>เลือกไฟล์ชุดใหม่</button><p data-progress role="status" class="wp-progress"></p><p class="wp-note"><Icon Name="lock" /> ดาวน์โหลดก่อนออกจากหน้านี้<br />ไฟล์จะไม่ถูกเก็บไว้ในบัญชี</p></aside>
+    </section>
+    <p data-error class="wp-error" role="alert" hidden></p>
+    <dialog data-preview class="wp-preview" aria-labelledby="wp-preview-title"><header><div><span class="eyebrow">ตรวจเอกสารก่อนนำไปใช้</span><h2 id="wp-preview-title" data-preview-name>ตัวอย่าง PDF</h2></div><button data-close class="button button-quiet" aria-label="ปิดตัวอย่าง"><Icon Name="close" /></button></header><div data-canvas class="wp-canvas" role="img" aria-label="ตัวอย่างหน้า PDF"></div><p data-preview-error role="status"></p><footer><div class="wp-page-controls"><button data-prev class="button button-quiet" aria-label="หน้าก่อนหน้า">←</button><span data-page aria-live="polite"></span><button data-next class="button button-quiet" aria-label="หน้าถัดไป">→</button></div><a data-preview-download class="button button-blue" download><Icon Name="download" /> ดาวน์โหลด PDF</a></footer></dialog>
+    <div data-row hidden><article><span class="wp-file-art"><ToolArtwork Name="convert" /></span><div class="wp-file-info"><h2 data-name></h2><p data-meta></p><p data-file-status></p></div><div class="wp-file-actions"><button data-view class="button button-soft small" hidden><Icon Name="eye" /> ดูตัวอย่าง</button><a data-save class="button button-soft small" hidden download aria-label="ดาวน์โหลด PDF"><Icon Name="download" /></a><button data-remove class="button button-quiet small" aria-label="นำไฟล์ออก"><Icon Name="trash" /></button></div></article></div>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/word-pdf.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

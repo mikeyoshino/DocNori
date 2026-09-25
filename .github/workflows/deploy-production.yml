@@ -95,6 +95,25 @@ jobs:
           chmod 600 "$ssh_root/id_ed25519" "$ssh_root/known_hosts"
           ssh-keygen -y -f "$ssh_root/id_ed25519" >/dev/null
 
+      - name: Verify Word worker isolation support
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT }}
+          VPS_USER: ${{ vars.VPS_USER }}
+        run: |
+          ssh_root="$RUNNER_TEMP/docnory-ssh"
+          ssh -p "${VPS_PORT:-22}" -i "$ssh_root/id_ed25519" \
+            -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o UserKnownHostsFile="$ssh_root/known_hosts" \
+            "$VPS_USER@$VPS_HOST" 'python3 -' <<'PY'
+          import ctypes, platform
+          libc = ctypes.CDLL(None, use_errno=True)
+          abi = libc.syscall(444, 0, 0, 1)
+          print(f"VPS kernel: {platform.release()}; Landlock ABI: {abi}")
+          if abi < 3:
+              raise SystemExit("Word conversion requires Landlock ABI >= 3; existing production app has not been changed.")
+          PY
+
       - name: Deploy immutable images on VPS
         env:
           HOST_NAME: ${{ steps.image.outputs.host }}

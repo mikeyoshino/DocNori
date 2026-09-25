@@ -6,8 +6,10 @@
 @using SabuySign.Web.Features.PdfToWord
 @using SabuySign.Web.Features.VideoGif
 @using SabuySign.Web.Features.VideoAudio
+@using SabuySign.Web.Features.WordToPdf
 @switch (ToolId)
 {
+    case "word-to-pdf": <WordToPdf /> break;
     case "fill-sign": <Editor /> break;
     case "video-to-mp3": <VideoAudio /> break;
     case "video-to-gif": <VideoGif /> break;

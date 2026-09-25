@@ -6,6 +6,7 @@ await build({
   entryPoints: {
     index: "src/SabuySign.Web/Client/editor/index.ts",
     "export.worker": "src/SabuySign.Web/Client/editor/export.worker.ts",
+    "word-pdf": "src/SabuySign.Web/Client/word-pdf/index.ts",
     "video-audio": "src/SabuySign.Web/Client/video-audio/index.ts",
     "video-gif": "src/SabuySign.Web/Client/video-gif/index.ts",
     split: "src/SabuySign.Web/Client/split/index.ts",
