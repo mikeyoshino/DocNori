@@ -163,7 +163,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
   await expect(page.locator(".document-tool")).toHaveCount(11);
-  await expect(page.locator(".document-tool.upcoming")).toHaveCount(4);
+  await expect(page.locator(".document-tool.upcoming")).toHaveCount(3);
   await page.getByRole("button", { name: "แปลงเอกสาร", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "แปลงเอกสาร", exact: true }),
@@ -173,7 +173,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
     "Word เป็น PDF",
   );
   await expect(page.locator(".document-tool").first()).toContainText(
-    "เร็ว ๆ นี้",
+    "พร้อมใช้งาน",
   );
   await expect(page.locator(".document-tool button")).toHaveCount(0);
   await page.getByRole("button", { name: "ทั้งหมด", exact: true }).focus();
@@ -265,7 +265,11 @@ test("cards navigate to dedicated tool pages before asking for a file", async ({
     await expect(
       page.getByRole("heading", {
         name:
-          id === "fill-sign" ? "กรอกข้อความภาษาไทยและเซ็น PDF ออนไลน์" : name,
+          id === "fill-sign"
+            ? "กรอกข้อความภาษาไทยและเซ็น PDF ออนไลน์"
+            : id === "word-to-pdf"
+              ? "แปลง Word เป็น PDF"
+              : name,
         exact: true,
       }),
     ).toBeVisible();
@@ -273,6 +277,10 @@ test("cards navigate to dedicated tool pages before asking for a file", async ({
     if (id === "fill-sign" || id === "merge")
       await expect(
         page.getByRole("button", { name: "เลือกไฟล์ PDF", exact: true }),
+      ).toBeEnabled();
+    else if (id === "word-to-pdf")
+      await expect(
+        page.getByRole("button", { name: "เลือกไฟล์ Word", exact: true }),
       ).toBeEnabled();
     else {
       await expect(

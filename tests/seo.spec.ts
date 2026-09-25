@@ -212,10 +212,16 @@ test("landing uses static SSR and tools start only the WebAssembly runtime", asy
   expect(errors).toEqual([]);
 });
 
-test("signing pages never load third-party advertising scripts", async ({
+test("signing and Word conversion pages never load third-party advertising scripts", async ({
   request,
 }) => {
-  for (const path of ["/tools/fill-sign", "/sign", "/sign-together"]) {
+  for (const path of [
+    "/tools/fill-sign",
+    "/sign",
+    "/sign-together",
+    "/tools/word-to-pdf",
+    "/tools/pdf-to-word",
+  ]) {
     const response = await request.get(path);
     expect(response.status()).toBe(200);
     expect(await response.text()).not.toContain(
