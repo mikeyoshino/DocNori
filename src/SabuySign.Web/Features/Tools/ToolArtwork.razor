@@ -1,6 +1,12 @@
 <svg class="tool-artwork artwork-@Name" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true" focusable="false">
     @switch (Name)
     {
+        case "video-audio":
+            <g><rect x="5" y="9" width="52" height="43" rx="8" fill="var(--category-tint)" /><path d="m24 19 16 11-16 11Z" fill="currentColor" /><rect x="32" y="36" width="43" height="38" rx="7" fill="currentColor" /><path d="M48 61V47l15-3v14m-15-7 15-3" stroke="white" stroke-width="3" /><ellipse cx="44" cy="62" rx="5" ry="4" fill="white" /><ellipse cx="59" cy="59" rx="5" ry="4" fill="white" /></g>
+            break;
+        case "video-gif":
+            <g><rect x="5" y="9" width="52" height="43" rx="8" fill="var(--category-tint)" /><path d="m26 20 16 10-16 10Z" fill="currentColor" /><rect x="30" y="38" width="45" height="34" rx="7" fill="currentColor" /><text x="52" y="60" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-weight="700" font-size="15">GIF</text></g>
+            break;
         case "to-jpg":
             <g stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h23l11 11v30H9a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4Z" fill="var(--category-tint)" /><text x="24" y="32" text-anchor="middle" fill="currentColor" font-family="Arial,sans-serif" font-weight="700" font-size="11">PDF</text><rect x="35" y="30" width="41" height="43" rx="5" fill="currentColor" /><circle cx="47" cy="42" r="4" fill="white" /><path d="m41 63 10-12 7 8 6-6 7 10Z" fill="white" /><path d="M8 61h19m-7-7 7 7-7 7" stroke="currentColor" stroke-width="3.5" /></g>
             break;

@@ -7,6 +7,7 @@ services:
     depends_on:
       - host
       - relay
+      - media-worker
     ports:
       - "127.0.0.1:8080:8080"
     restart: unless-stopped
@@ -14,12 +15,34 @@ services:
     build:
       context: ..
       dockerfile: infra/Dockerfile
+    volumes:
+      - media-data:/media
     environment:
+      MediaConversion__Enabled: "true"
+      MediaConversion__StoragePath: /media
       PublicOrigin: ${PUBLIC_ORIGIN:-http://localhost:8080}
       SigningSessions__ConnectionString: Host=postgres;Database=sabuysign;Username=sabuysign;Password=${POSTGRES_PASSWORD:-local-development-only}
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+  media-worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    entrypoint: ["dotnet", "/app/worker/SabuySign.Media.Worker.dll"]
+    environment:
+      MediaConversion__MaxConcurrency: ${MEDIA_WORKER_CONCURRENCY:-0}
+      MediaConversion__StoragePath: /media
+      MediaConversion__ConnectionString: Host=postgres;Database=sabuysign;Username=sabuysign;Password=${POSTGRES_PASSWORD:-local-development-only}
+    volumes:
+      - media-data:/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: ${MEDIA_WORKER_MEMORY:-2g}
+    cpus: ${MEDIA_WORKER_CPUS:-1.0}
+    pids_limit: 128
     restart: unless-stopped
   relay:
     build:
@@ -45,4 +68,5 @@ services:
       retries: 5
     restart: unless-stopped
 volumes:
+  media-data:
   postgres-data:

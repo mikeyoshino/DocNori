@@ -70,16 +70,17 @@ compose() { docker compose --env-file "$runtime_env" -f "$compose_file" "$@"; }
 rollback() {
   local exit_code=$?
   if [[ "$deployment_succeeded" == true ]]; then return; fi
-  compose logs --no-color --tail 80 web host relay >&2 || true
+  compose logs --no-color --tail 80 web host media-worker relay >&2 || true
   if [[ -n "$current_host" && -n "$current_relay" ]]; then
     write_environment "$runtime_env" "$current_host" "$current_relay"
     restore_env="$(mktemp /etc/docnory/.compose.rollback.XXXXXX)"
     write_environment "$restore_env" "$current_host" "$current_relay"
     mv -f "$restore_env" "$compose_env"
-    compose up -d --force-recreate host relay web || true
+    compose stop media-worker || true
+    compose up -d --no-deps --force-recreate host relay web || true
     echo "DocNory update failed; previous application images were restored." >&2
   else
-    compose stop web host relay || true
+    compose stop web host media-worker relay || true
     echo "Initial DocNory deployment failed; no previous images existed." >&2
   fi
   exit "$exit_code"
@@ -87,11 +88,13 @@ rollback() {
 trap rollback ERR
 
 compose config --quiet
-compose pull host relay web
-compose up -d --force-recreate host relay web
+compose pull host media-worker relay web
+compose up -d --force-recreate host media-worker relay web
 ready=false
 for _ in {1..30}; do
-  if compose exec -T web wget -q -O /dev/null http://127.0.0.1:8080/ >/dev/null 2>&1; then
+  if compose exec -T web wget -q -O /dev/null http://127.0.0.1:8080/ >/dev/null 2>&1 \
+    && [[ -n "$(compose ps --status running -q media-worker)" ]] \
+    && compose logs --no-color media-worker 2>/dev/null | grep -q "Media worker ready"; then
     ready=true
     break
   fi

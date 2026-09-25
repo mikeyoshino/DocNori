@@ -4,9 +4,13 @@
 @using SabuySign.Web.Features.Signatures
 @using SabuySign.Web.Features.PdfToJpg
 @using SabuySign.Web.Features.PdfToWord
+@using SabuySign.Web.Features.VideoGif
+@using SabuySign.Web.Features.VideoAudio
 @switch (ToolId)
 {
     case "fill-sign": <Editor /> break;
+    case "video-to-mp3": <VideoAudio /> break;
+    case "video-to-gif": <VideoGif /> break;
     case "merge": <Merge /> break;
     case "split": <Split /> break;
     case "pdf-to-word": <ConvertWord /> break;

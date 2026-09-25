@@ -1,0 +1,26 @@
+# Standalone worker VPS: mount the SAME shared filesystem used by the API first.
+# Database must be reachable over a private network/TLS; do not expose PostgreSQL publicly.
+name: docnori-media-worker
+services:
+  media-worker:
+    image: ${DOCNORY_HOST_IMAGE:?Set the published immutable image digest}
+    entrypoint: ["dotnet", "/app/worker/SabuySign.Media.Worker.dll"]
+    restart: unless-stopped
+    env_file:
+      - /etc/docnory/media-worker.env
+    environment:
+      MediaConversion__StoragePath: /media
+      MediaConversion__MaxConcurrency: ${MEDIA_WORKER_CONCURRENCY:-0}
+    volumes:
+      - type: bind
+        source: ${MEDIA_SHARED_PATH:?Mount the shared media filesystem first}
+        target: /media
+        bind:
+          create_host_path: false
+    cpus: ${MEDIA_WORKER_CPUS:?Set this VPS worker CPU allocation}
+    mem_limit: ${MEDIA_WORKER_MEMORY:?Set this VPS worker memory allocation}
+    pids_limit: 512
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp]

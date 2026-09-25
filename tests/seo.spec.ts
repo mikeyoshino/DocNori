@@ -54,7 +54,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   await expect(
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(9);
+  await expect(page.locator(".document-tool")).toHaveCount(11);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     "http://localhost:8080/",
@@ -99,6 +99,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   expect(await sitemap.text()).toContain("http://localhost:8080/tools/merge");
   expect(await sitemap.text()).not.toContain("/sign<");
   expect(await sitemap.text()).not.toContain("compress");
+  expect(await sitemap.text()).toContain("/tools/video-to-gif");
   expect(await (await request.get("/robots.txt")).text()).toContain(
     "Disallow: /sign",
   );
@@ -188,7 +189,7 @@ test("landing uses static SSR and tools start only the WebAssembly runtime", asy
     if (message.type() === "error") errors.push(message.text());
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "แปลงไฟล์", exact: true }).click();
+  await page.getByRole("button", { name: "แปลงเอกสาร", exact: true }).click();
   await expect(page.locator(".document-tool")).toHaveCount(5);
   expect(
     requests.filter((url) => /\.wasm(?:\?|$)|blazor\.boot|_blazor\//.test(url)),

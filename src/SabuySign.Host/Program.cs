@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Xml.Linq;
 using SabuySign.Host.Components;
+using SabuySign.Host.Features.MediaConversion;
 using SabuySign.Host.Features.Seo;
 using SabuySign.Host.Features.SigningSessions;
 using SabuySign.Web.Features.Tools;
@@ -9,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseStaticWebAssets();
 builder.Services.AddRazorComponents().AddInteractiveWebAssemblyComponents();
 builder.Services.AddSingleton(new PublicSite(builder.Configuration["PublicOrigin"] ?? "http://localhost:8080"));
+builder.AddMedia();
 builder.AddSigningSessions();
 var app = builder.Build();
 app.UseRateLimiter();
@@ -16,7 +18,7 @@ app.Use(async (context, next) =>
 {
     var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24));
     context.Items["CspNonce"] = nonce;
-    context.Response.Headers.ContentSecurityPolicy = $"default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' 'nonce-{nonce}' 'strict-dynamic' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' blob: https:; connect-src 'self' https:; frame-src https:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'";
+    context.Response.Headers.ContentSecurityPolicy = $"default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' 'nonce-{nonce}' 'strict-dynamic' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' blob: https:; connect-src 'self' https:; frame-src https:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'";
     context.Response.Headers.XContentTypeOptions = "nosniff";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
     context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
@@ -34,6 +36,7 @@ app.Use(async (context, next) =>
 app.UseAntiforgery();
 app.MapStaticAssets();
 await app.MapSigningSessions();
+await app.MapMedia();
 app.MapGet("/robots.txt", (PublicSite site) => Results.Text($"User-agent: *\nAllow: /\nDisallow: /sign\nDisallow: /api/\nSitemap: {site.Url("/sitemap.xml")}\n", "text/plain"));
 app.MapGet("/sitemap.xml", (PublicSite site) =>
 {

@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/SabuySign.Media/SabuySign.Media.csproj" />
+    <Project Path="src/SabuySign.Media.Worker/SabuySign.Media.Worker.csproj" />
     <Project Path="src/SabuySign.Relay/SabuySign.Relay.csproj" />
     <Project Path="src/SabuySign.Host/SabuySign.Host.csproj" />
     <Project Path="src/SabuySign.Web/SabuySign.Web.csproj" />

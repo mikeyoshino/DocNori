@@ -162,11 +162,11 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(9);
+  await expect(page.locator(".document-tool")).toHaveCount(11);
   await expect(page.locator(".document-tool.upcoming")).toHaveCount(4);
-  await page.getByRole("button", { name: "แปลงไฟล์", exact: true }).click();
+  await page.getByRole("button", { name: "แปลงเอกสาร", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "แปลงไฟล์", exact: true }),
+    page.getByRole("button", { name: "แปลงเอกสาร", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".document-tool")).toHaveCount(5);
   await expect(page.locator(".document-tool").first()).toContainText(
@@ -178,7 +178,15 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(page.locator(".document-tool button")).toHaveCount(0);
   await page.getByRole("button", { name: "ทั้งหมด", exact: true }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".document-tool")).toHaveCount(9);
+  await expect(page.locator(".document-tool")).toHaveCount(11);
+  await page
+    .getByRole("button", { name: "วิดีโอและเสียง", exact: true })
+    .click();
+  await expect(page.locator(".document-tool")).toHaveCount(2);
+  await expect(
+    page.locator(".document-tool").filter({ hasText: "วิดีโอเป็น GIF" }),
+  ).toHaveCount(1);
+  await page.getByRole("button", { name: "ทั้งหมด", exact: true }).click();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: "artifacts/home.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

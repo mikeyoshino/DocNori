@@ -9,9 +9,12 @@ public static class ToolCatalog
         new("edit", "แก้ไขและเซ็น"),
         new("organize", "จัดการไฟล์ PDF"),
         new("optimize", "ลดขนาดไฟล์"),
-        new("convert", "แปลงไฟล์")
+        new("convert", "แปลงเอกสาร"),
+        new("media", "วิดีโอและเสียง")
     ];
     public static IReadOnlyList<DocumentTool> Tools { get; } = [
+        new("video-to-mp3", "media", "วิดีโอเป็นเสียง MP3", "แยกเสียงทั้งคลิปเป็น MP3 ฟังตัวอย่างและดาวน์โหลดได้เลย ไฟล์ส่งไปแปลงชั่วคราว", "video-audio", "MP4 / MOV / WebM → MP3", true),
+        new("video-to-gif", "media", "วิดีโอเป็น GIF", "เลือกช่วงที่ชอบ แล้วสร้างภาพเคลื่อนไหว เลือกช่วงได้สูงสุด 30 วินาที", "video-gif", "MP4 / MOV / WebM → GIF", true),
         new("fill-sign", "edit", "กรอกและเซ็น PDF", "เพิ่มข้อความไทย–อังกฤษ วางลายเซ็น และตรวจเอกสารก่อนดาวน์โหลด", "text", "PDF", true),
         new("merge", "organize", "รวมไฟล์ PDF", "รวมเอกสารหลายไฟล์เป็น PDF เดียว พร้อมจัดลำดับไฟล์ตามต้องการ", "merge", "PDF + PDF", true),
         new("split", "organize", "แยกไฟล์ PDF", "แยกหน้าที่ต้องการจาก PDF ออกเป็นเอกสารใหม่", "split", "PDF → PDF", true),

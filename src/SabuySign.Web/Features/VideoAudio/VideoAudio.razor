@@ -1,0 +1,39 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>แปลงวิดีโอเป็นเสียง MP3 ออนไลน์ฟรี — DocNory</PageTitle>
+<SiteNav />
+<main class="gif-tool audio-tool category-media" @ref="Root">
+    <input data-file type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm" hidden />
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="video-audio" /></span>
+        <h1>แปลงวิดีโอเป็นเสียง MP3</h1><p>เก็บเฉพาะเสียงจากวิดีโอไว้ฟังได้ง่าย ๆ</p>
+        <div data-drop class="tool-file-drop"><Icon Name="upload" /><button data-choose class="button button-blue" disabled="@(!Ready)">เลือกวิดีโอ <Icon Name="arrow" /></button><p>หรือลากไฟล์มาวางที่นี่</p><span class="file-limits">MP4, MOV, WebM · สูงสุด 500 MB / 1 ชั่วโมง</span></div>
+        <p class="tool-local-note"><Icon Name="lock" /> ไฟล์ส่งไปแปลงชั่วคราว · ออกจากหน้าแล้วไฟล์จะถูกลบ</p>
+        <div class="gif-seo"><section><h2>แปลง MP4 เป็น MP3 ออนไลน์ฟรี</h2><p>แยกเสียงจากคลิปวิดีโอเพื่อเก็บบทสนทนา เสียงบรรยาย หรือเสียงที่คุณบันทึกไว้เป็นไฟล์ MP3 เลือกวิดีโอ กดแปลง แล้วฟังตัวอย่างก่อนดาวน์โหลดได้เลย ไม่ต้องสมัครสมาชิกหรือติดตั้งโปรแกรม</p></section><section class="gif-seo-faq"><h2>คำถามที่พบบ่อย</h2><details><summary>แปลงเสียงทั้งคลิปได้ไหม?</summary><p>เครื่องมือนี้แปลงเสียงตลอดทั้งคลิป รองรับวิดีโอไม่เกิน 1 ชั่วโมงและขนาดไม่เกิน 500 MB ครั้งละ 1 ไฟล์</p></details><details><summary>ใช้ไฟล์วิดีโออะไรได้บ้าง?</summary><p>รองรับ MP4, MOV และ WebM ที่เบราว์เซอร์เปิดเล่นได้ หากไฟล์มีเสียงหลายแทร็ก จะใช้แทร็กเสียงแรก</p></details><details><summary>ถ้าวิดีโอไม่มีเสียงจะเป็นอย่างไร?</summary><p>ระบบจะแจ้งว่าไม่พบเสียง ให้เลือกวิดีโออื่น ไม่สร้างไฟล์เสียงเปล่าให้ดาวน์โหลด</p></details><details><summary>วิดีโอถูกส่งไปที่ไหนไหม?</summary><p>วิดีโอส่งไปแปลงบนเซิร์ฟเวอร์ชั่วคราว ออกจากหน้านี้แล้วงานและไฟล์จะถูกลบ เมื่อเสร็จแล้วให้ดาวน์โหลด MP3 ก่อนปิดหน้าเว็บ</p></details></section><nav class="gif-seo-related" aria-label="เครื่องมือที่เกี่ยวข้อง"><a href="/tools/video-to-gif">แปลงวิดีโอเป็น GIF</a><a href="/">ดูเครื่องมือทั้งหมด</a></nav></div>
+    </section>
+    <section data-workspace class="gif-workspace" hidden aria-label="แปลงวิดีโอเป็นเสียง">
+        <div class="gif-stage"><div class="gif-heading"><div><span class="eyebrow">วิดีโอเป็นเสียง</span><h2 data-filename></h2></div><button data-choose class="button button-quiet small">เปลี่ยนวิดีโอ</button></div><div class="gif-player"><video data-video controls playsinline preload="metadata"></video></div><p data-duration class="gif-hint"></p></div>
+        <aside class="gif-options"><span class="tool-card-icon"><ToolArtwork Name="video-audio" /></span><h2>เก็บเฉพาะเสียง</h2><p>แปลงเสียงทั้งคลิปเป็น MP3<br />พร้อมฟังและดาวน์โหลด</p><button data-create class="button button-blue full">แปลงเป็น MP3</button></aside>
+    </section>
+    <section data-progress class="gif-progress" hidden><span class="gif-spinner" aria-hidden="true"></span><h2 data-progress-text role="status">กำลังแปลงเป็นเสียง…</h2><p>เปิดหน้านี้ไว้จนเสร็จ ออกจากหน้าแล้วงานจะหยุด</p></section>
+    <section data-result class="gif-result" hidden><span class="eyebrow">พร้อมแล้ว</span><h2 data-result-title tabindex="-1">ไฟล์เสียงของคุณ</h2><div class="audio-preview"><span class="tool-card-icon"><ToolArtwork Name="video-audio" /></span><audio data-audio controls preload="metadata" aria-label="ฟังตัวอย่างเสียง MP3"></audio></div><p data-result-size></p><div class="gif-result-actions"><a data-download class="button button-blue"><Icon Name="download" /> ดาวน์โหลด MP3</a><button data-choose class="button button-soft">เลือกวิดีโอใหม่</button></div></section>
+    <p data-error class="gif-error" role="alert" hidden></p><p data-status class="gif-status" role="status"></p>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/video-audio.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

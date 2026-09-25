@@ -1,0 +1,17 @@
+# Apply on the API VPS together with compose.production.yaml when moving to multiple hosts.
+# Stop accepting jobs and drain/expire old work before switching storage.
+services:
+  host:
+    volumes:
+      - type: bind
+        source: ${MEDIA_SHARED_PATH:?Mount the shared media filesystem first}
+        target: /media
+        bind:
+          create_host_path: false
+  media-worker:
+    volumes:
+      - type: bind
+        source: ${MEDIA_SHARED_PATH:?Mount the shared media filesystem first}
+        target: /media
+        bind:
+          create_host_path: false

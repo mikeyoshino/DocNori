@@ -1,0 +1,12 @@
+# Server media conversion
+User-approved requirements: separate GIF and MP3 pages; VPS conversion; GIF input <=200 MB and source <=1h with selected interval <=30s; MP3 <=500 MB and <=1h, whole first audio stream. No cancel button. Leaving page cancels and deletes all files including completed output. Native confirmation during active jobs; heartbeat grace handles lost leave notifications. Maximum completed retention1h.
+
+Implementation: feature MediaConversion in Host with separate worker-only container (same image), PostgreSQL durable queue and SKIP LOCKED claims, bounded concurrency1/container, shared filesystem storage on single VPS and shared mounted storage for multi-host workers. API streams8MiB chunks with expected offset under row lock; capabilities hashed; enqueue after full upload. Worker leases fenced by run ID, ffprobe server validation, isolated FFmpeg subprocess with no network protocols, process tree cancellation. Heartbeat every15s, expire after120s; hard upload lifetime2h. Capacity quotas atomically checked. Cleanup polling removes failed/cancelled/expired files. Completed files removed after user leaves or retention expires.
+
+Tests: unauthorized requests, limits, chunk ordering/retry, queue claim fencing, actual GIF/MP3, no audio, heartbeat expiry, cancellation and cleanup; browser tests verify upload and dedicated routes, absence of cancel button, leave lifecycle, privacy copy and metadata. Existing unrelated paid Word work remains untouched.
+
+Not included: deployment to live VPS without a separate deploy request; automatic cloud provisioning. Initial workers share mounted storage. Multi-host scale requires shared mount or an object-storage adapter before moving workers across machines.
+
+## Approved follow-up: worker deployments across VPSs
+
+Separate executable `SabuySign.Media.Worker`, shared queue/conversion library `SabuySign.Media`, API endpoints remain in Host. The worker has no HTTP listener and consumes multiple slots based on assigned cgroup CPU/memory and a configurable upper bound. Keep the shared-VPS default at 1 CPU/2 GiB. Publish both executables in the release image to preserve existing deployment inputs; each worker container selects its own entrypoint and can deploy independently using an immutable image digest. Supply standalone worker compose and shared filesystem override. Cross-host deployments require the same mounted media filesystem and reachable PostgreSQL, not independent Docker volumes.

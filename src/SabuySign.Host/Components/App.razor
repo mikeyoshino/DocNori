@@ -8,10 +8,11 @@
     <link rel="stylesheet" href="@Assets["css/app.css"]" />
     <link rel="stylesheet" href="@Assets["css/file-source-picker.css"]" />
     <link rel="stylesheet" href="@Assets["css/conversion.css"]" />
+    <link rel="stylesheet" href="@Assets["css/video-gif.css"]" />
     <link rel="stylesheet" href="@Assets["css/editor.css"]" />
     <link rel="stylesheet" href="@Assets["css/dropdown.css"]" />
     <ImportMap AdditionalAttributes="ImportAttributes" />
-    @if (!HttpContext.Request.Path.StartsWithSegments("/sign-together") && !HttpContext.Request.Path.StartsWithSegments("/sign") && !HttpContext.Request.Path.StartsWithSegments("/tools/fill-sign"))
+    @if (!HttpContext.Request.Path.StartsWithSegments("/sign-together") && !HttpContext.Request.Path.StartsWithSegments("/sign") && !HttpContext.Request.Path.StartsWithSegments("/tools/fill-sign") && !HttpContext.Request.Path.StartsWithSegments("/tools/video-to-gif") && !HttpContext.Request.Path.StartsWithSegments("/tools/video-to-mp3"))
     {
     <script nonce="@CspNonce" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1030637351071742" crossorigin="anonymous"></script>
     }

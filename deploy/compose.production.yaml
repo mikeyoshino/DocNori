@@ -14,20 +14,47 @@ services:
     depends_on:
       - host
       - relay
+      - media-worker
 
   host:
     image: ${DOCNORY_HOST_IMAGE:?Set an immutable DocNory host image digest}
     restart: unless-stopped
-    env_file:
-      - /etc/docnory/signing.env
     depends_on:
       signing-db:
         condition: service_healthy
+    env_file:
+      - /etc/docnory/signing.env
+    volumes:
+      - media-data:/media
     environment:
+      MediaConversion__Enabled: "true"
+      MediaConversion__StoragePath: /media
       ASPNETCORE_ENVIRONMENT: Production
       PublicOrigin: ${DOCNORY_PUBLIC_ORIGIN:?Set the public HTTPS origin}
     networks:
       - backend
+
+  media-worker:
+    image: ${DOCNORY_HOST_IMAGE:?Set an immutable DocNory host image digest}
+    restart: unless-stopped
+    env_file:
+      - /etc/docnory/signing.env
+    entrypoint: ["dotnet", "/app/worker/SabuySign.Media.Worker.dll"]
+    environment:
+      MediaConversion__MaxConcurrency: ${MEDIA_WORKER_CONCURRENCY:-0}
+      MediaConversion__StoragePath: /media
+    volumes:
+      - media-data:/media
+    networks:
+      - backend
+    depends_on:
+      signing-db:
+        condition: service_healthy
+    mem_limit: ${MEDIA_WORKER_MEMORY:-2g}
+    cpus: ${MEDIA_WORKER_CPUS:-1.0}
+    pids_limit: 128
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
 
   relay:
     image: ${DOCNORY_RELAY_IMAGE:?Set an immutable DocNory relay image digest}
@@ -58,6 +85,7 @@ services:
       retries: 12
 
 volumes:
+  media-data:
   signing-data:
 
 networks:

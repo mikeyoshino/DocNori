@@ -1,0 +1,77 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>แปลงวิดีโอเป็น GIF ออนไลน์ฟรี | MP4 เป็น GIF — DocNory</PageTitle>
+<SiteNav />
+<main class="gif-tool category-media" @ref="Root">
+    <input data-file type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm" hidden />
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="video-gif" /></span>
+        <h1>แปลงวิดีโอเป็น GIF</h1>
+        <p>เลือกช่วงที่ชอบ แล้วสร้างภาพเคลื่อนไหว</p>
+        <div data-drop class="tool-file-drop"><Icon Name="upload" /><button data-choose class="button button-blue" disabled="@(!Ready)">เลือกวิดีโอ <Icon Name="arrow" /></button><p>หรือลากไฟล์มาวางที่นี่</p><span class="file-limits">MP4, MOV, WebM · สูงสุด 200 MB</span></div>
+        <p class="tool-local-note"><Icon Name="lock" /> ไฟล์ส่งไปแปลงชั่วคราว · ออกจากหน้าแล้วไฟล์จะถูกลบ</p>
+        <div class="gif-seo">
+            <section aria-labelledby="gif-about-heading">
+                <h2 id="gif-about-heading">แปลงวิดีโอเป็น GIF ออนไลน์ฟรี</h2>
+                <p>เปลี่ยนช่วงสั้น ๆ ในวิดีโอให้เป็นภาพ GIF สำหรับส่งในแชต แสดงขั้นตอนการใช้งาน หรือแชร์ช่วงที่ชอบ เลือกไฟล์จากเครื่อง ตัดช่วงที่ต้องการ แล้วดาวน์โหลดภาพเคลื่อนไหวได้เลย ไม่ต้องติดตั้งโปรแกรมหรือสมัครสมาชิก</p>
+                <p>ใช้แปลง MP4 เป็น GIF รวมถึงไฟล์ MOV และ WebM ที่เบราว์เซอร์ของคุณเปิดเล่นได้ เลือกขนาดภาพเล็ก กลาง หรือใหญ่ และดูตัวอย่างก่อนดาวน์โหลด วิดีโอจะส่งไปประมวลผลชั่วคราว และลบเมื่อคุณออกจากหน้า</p>
+            </section>
+            <section aria-labelledby="gif-how-heading">
+                <h2 id="gif-how-heading">วิธีสร้าง GIF จากวิดีโอ</h2>
+                <ol class="gif-seo-steps">
+                    <li><h3>เลือกวิดีโอ</h3><p>เลือกไฟล์ MP4, MOV หรือ WebM ขนาดไม่เกิน 200 MB หรือจะลากไฟล์มาวางก็ได้</p></li>
+                    <li><h3>เลือกช่วงที่ชอบ</h3><p>ลากจุดเริ่มและจบเพื่อเลือกช่วงไม่เกิน 30 วินาที แล้วเลือกขนาดภาพที่ต้องการ</p></li>
+                    <li><h3>สร้างและดาวน์โหลด</h3><p>กด “สร้าง GIF” ดูภาพที่ได้ แล้วกด “ดาวน์โหลด GIF” เพื่อเก็บไว้ใช้</p></li>
+                </ol>
+            </section>
+            <section class="gif-seo-faq" aria-labelledby="gif-faq-heading">
+                <h2 id="gif-faq-heading">คำถามที่พบบ่อย</h2>
+                <details><summary>แปลงวิดีโอเป็น GIF ฟรีไหม?</summary><p>ใช้ฟรีได้โดยไม่ต้องสมัครสมาชิก เลือกวิดีโอ สร้าง GIF และดาวน์โหลดไฟล์ได้จากหน้านี้</p></details>
+                <details><summary>วิดีโอต้องมีขนาดไม่เกินเท่าไหร่?</summary><p>เลือกได้ครั้งละ 1 ไฟล์ ขนาดไม่เกิน 200 MB และความยาวไม่เกิน 1 ชั่วโมง จากนั้นเลือกช่วงที่จะทำ GIF ได้สูงสุด 30 วินาที</p></details>
+                <details><summary>ทำไม GIF ถึงไม่มีเสียง?</summary><p>GIF เป็นรูปภาพเคลื่อนไหวที่ไม่รองรับเสียง ไฟล์ที่ได้จึงแสดงเฉพาะภาพจากช่วงวิดีโอที่คุณเลือก</p></details>
+                <details><summary>ทำให้ GIF มีขนาดไฟล์เล็กลงได้อย่างไร?</summary><p>เลือกช่วงสั้นลงหรือเลือกขนาดภาพ “เล็ก” หากสร้างเสร็จแล้วและมีปุ่ม “ทำให้ไฟล์เล็กลง” ให้กดเพื่อลดขนาดภาพได้เลย</p></details>
+                <details><summary>ใช้บนมือถือได้ไหม?</summary><p>เปิดเครื่องมือนี้ผ่านเบราว์เซอร์บนมือถือได้ แต่การเปิดวิดีโอและเวลาในการแปลงขึ้นอยู่กับขนาดไฟล์และจำนวนงานในคิว หากแปลงไม่สำเร็จ ลองเลือกช่วงสั้นลงหรือภาพขนาดเล็ก</p></details>
+                <details><summary>ไฟล์วิดีโอถูกเก็บไว้ที่ไหน?</summary><p>เครื่องมือนี้อัปโหลดวิดีโอไปแปลงบนเซิร์ฟเวอร์ชั่วคราว เมื่อสร้างเสร็จให้ดาวน์โหลด GIF ก่อนปิดหรือรีเฟรชหน้าเว็บ</p></details>
+            </section>
+            <nav class="gif-seo-related" aria-label="เครื่องมืออื่นที่เกี่ยวข้อง"><h2>อยากจัดการไฟล์อื่นต่อ?</h2><a href="/tools/pdf-to-jpg">แปลง PDF เป็น JPG</a><a href="/">ดูเครื่องมือทั้งหมด</a></nav>
+        </div>
+    </section>
+    <section data-workspace class="gif-workspace" hidden aria-label="เลือกช่วงวิดีโอ">
+        <div class="gif-stage">
+            <div class="gif-heading"><div><span class="eyebrow">วิดีโอเป็น GIF</span><h2 data-filename></h2></div><button data-choose class="button button-quiet small">เปลี่ยนวิดีโอ</button></div>
+            <div class="gif-player"><video data-video playsinline muted controls preload="metadata"></video></div>
+            <div class="gif-timeline"><div class="gif-heading"><h3>เลือกช่วงที่ต้องการ</h3><output data-duration></output></div>
+                <label>เริ่ม <output data-start-label></output><input data-start type="range" min="0" max="1" step="0.1" value="0" aria-label="จุดเริ่มต้น" /></label>
+                <label>จบ <output data-end-label></output><input data-end type="range" min="0" max="1" step="0.1" value="1" aria-label="จุดสิ้นสุด" /></label>
+                <div class="gif-timeline-footer"><button data-play class="button button-soft small">เล่นช่วงที่เลือก</button><span>เลือกได้สูงสุด 30 วินาที</span></div>
+            </div>
+        </div>
+        <aside class="gif-options"><h2>สร้าง GIF ของคุณ</h2>
+            <fieldset><legend>ขนาดภาพ</legend><div class="gif-segments"><label><input type="radio" name="gif-size" value="small" /><span>เล็ก</span></label><label><input type="radio" name="gif-size" value="medium" checked /><span>กลาง</span></label><label><input type="radio" name="gif-size" value="large" /><span>ใหญ่</span></label></div></fieldset>
+            <details><summary>ปรับเพิ่มเติม</summary><label class="gif-check"><input data-loop type="checkbox" checked /> เล่นวนซ้ำ</label><label class="gif-check"><input data-smooth type="checkbox" /> เคลื่อนไหวลื่นขึ้น</label></details>
+            <p class="gif-hint">GIF ไม่มีเสียง</p>
+            <button data-create class="button button-blue full">สร้าง GIF <Icon Name="arrow" /></button>
+        </aside>
+    </section>
+    <section data-progress class="gif-progress" hidden aria-labelledby="gif-progress-heading"><span class="gif-spinner" aria-hidden="true"></span><h2 id="gif-progress-heading" data-progress-text role="status">กำลังสร้าง GIF…</h2><p>เปิดหน้านี้ไว้จนเสร็จ ออกจากหน้าแล้วงานจะหยุด</p></section>
+    <section data-result class="gif-result" hidden aria-labelledby="gif-result-heading"><span class="eyebrow">พร้อมแล้ว</span><h2 id="gif-result-heading" tabindex="-1">GIF ของคุณ</h2><div class="gif-result-image"><img data-image alt="ตัวอย่าง GIF ที่สร้างแล้ว" /></div><p data-result-size></p><div class="gif-result-actions"><a data-download class="button button-blue"><Icon Name="download" /> ดาวน์โหลด GIF</a><button data-edit class="button button-soft">แก้ไขช่วง</button></div><div class="gif-result-secondary"><button data-smaller class="button button-quiet">ทำให้ไฟล์เล็กลง</button><button data-new class="button button-quiet">เลือกวิดีโอใหม่</button></div></section>
+    <p data-error class="gif-error" role="alert" hidden></p><p data-status class="gif-status" role="status"></p>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/video-gif.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}
