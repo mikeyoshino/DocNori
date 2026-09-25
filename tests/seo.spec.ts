@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test("AdSense loader is in public marketing pages and allowed by CSP", async ({
   request,
 }) => {
-  for (const path of ["/", "/tools/merge", "/tools/missing"]) {
+  for (const path of ["/", "/tools/missing"]) {
     const response = await request.get(path);
     const html = await response.text();
     const csp = response.headers()["content-security-policy"];
@@ -215,10 +215,11 @@ test("landing uses static SSR and tools start only the WebAssembly runtime", asy
   expect(errors).toEqual([]);
 });
 
-test("signing and Word conversion pages never load third-party advertising scripts", async ({
+test("private document tool pages never load third-party advertising scripts", async ({
   request,
 }) => {
   for (const path of [
+    "/tools/merge",
     "/tools/fill-sign",
     "/sign",
     "/sign-together",
