@@ -5,7 +5,7 @@
         <span class="eyebrow">พื้นที่ทำงานสำหรับคุณ</span>
         <h1>จัดการ PDF ออนไลน์<br /><span>ให้เป็นเรื่องง่าย</span></h1>
         <p>เซ็นเอกสาร กรอกข้อความภาษาไทย หรือจัดการไฟล์ PDF ได้ในที่เดียว<br class="desktop-break" /> รวมไฟล์ แยกหน้า และแปลง PDF เป็น JPG ผ่านเบราว์เซอร์</p>
-        <span class="tools-release-note"><span class="status-dot"></span>กรอก เซ็น รวม แยก และแปลง PDF เป็น JPG / Word ใช้ได้แล้ว · เครื่องมืออื่นกำลังพัฒนา</span>
+        <span class="tools-release-note"><span class="status-dot"></span>เลือกเครื่องมือแล้วเริ่มใช้งานได้เลย</span>
     </section>
     <section id="tools" class="tool-directory" aria-labelledby="tools-heading">
         <div class="directory-heading"><div><h2 id="tools-heading">วันนี้อยากจัดการอะไร?</h2><p>เลือกดูเครื่องมือตามหมวดงานของคุณ</p></div><span class="directory-count" aria-live="polite">@VisibleTools.Count() เครื่องมือ</span></div>
@@ -16,31 +16,14 @@
                 <button class="category-button category-@category.Id @(Category == category.Id ? "selected" : "")" aria-pressed="@(Category == category.Id ? "true" : "false")" data-filter="@category.Id"><span class="category-dot" aria-hidden="true"></span>@category.Label</button>
             }
         </nav>
-        <div class="tool-groups">
-            @foreach (var group in ToolCatalog.Categories.Where(c => VisibleTools.Any(t => t.Category == c.Id)))
+        <div class="tool-groups tool-category">
+            @foreach (var tool in VisibleTools)
             {
-                <section class="tool-category category-@group.Id" data-tool-category="@group.Id" aria-labelledby="category-heading-@group.Id" @key="group.Id">
-                    <h3 class="tool-category-heading" id="category-heading-@group.Id"><span class="category-dot" aria-hidden="true"></span>@group.Label</h3>
-                    <div class="tool-cards">
-            @foreach (var tool in VisibleTools.Where(t => t.Category == group.Id))
-            {
-                <article class="document-tool @(tool.Available ? "available" : "upcoming")" @key="tool.Id">
-                    <div class="tool-card-top"><span class="tool-card-icon"><ToolArtwork Name="@tool.Icon" /></span><span class="tool-availability">@(tool.Available ? "พร้อมใช้งาน" : "เร็ว ๆ นี้")</span></div>
-                    <h4>@tool.Name</h4><p>@tool.Description</p>
-                    <div class="tool-card-footer"><span>@tool.Formats</span>
-                        @if (tool.Available)
-                        {
-                            <a class="tool-launch" href="@($"/tools/{tool.Id}")" aria-label="@($"เปิดเครื่องมือ{tool.Name}")">เปิดเครื่องมือ <Icon Name="arrow" /></a>
-                        }
-                        else
-                        {
-                            <a class="tool-launch tool-pending" href="@($"/tools/{tool.Id}")" aria-label="@($"ดูรายละเอียด{tool.Name}")">ดูรายละเอียด <Icon Name="arrow" /></a>
-                        }
-                    </div>
+                <article class="document-tool available category-@tool.Category" data-tool-category="@tool.Category" @key="tool.Id">
+                    <div class="tool-card-top"><span class="tool-card-icon"><ToolArtwork Name="@tool.Icon" /></span><span class="tool-availability">@ToolCatalog.Categories.First(c => c.Id == tool.Category).Label</span></div>
+                    <h3>@tool.Name</h3><p>@tool.Description</p>
+                    <div class="tool-card-footer"><span>@tool.Formats</span><a class="tool-launch" href="@($"/tools/{tool.Id}")" aria-label="@($"เปิดเครื่องมือ{tool.Name}")">เปิดเครื่องมือ <Icon Name="arrow" /></a></div>
                 </article>
-            }
-                    </div>
-                </section>
             }
         </div>
     </section>
@@ -53,5 +36,5 @@
 <footer><span class="brand"><BrandLogo /></span><span>เครื่องมือเอกสาร ในที่เดียว</span></footer>
 @code {
     private string Category = "all";
-    private IEnumerable<DocumentTool> VisibleTools => Category == "all" ? ToolCatalog.Tools : ToolCatalog.Tools.Where(t => t.Category == Category);
+    private IEnumerable<DocumentTool> VisibleTools => ToolCatalog.Categories.Where(c => Category == "all" || c.Id == Category).SelectMany(c => ToolCatalog.Tools.Where(t => t.Available && t.Category == c.Id));
 }

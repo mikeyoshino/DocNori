@@ -162,23 +162,23 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(11);
-  await expect(page.locator(".document-tool.upcoming")).toHaveCount(2);
+  await expect(page.locator(".document-tool")).toHaveCount(9);
+  await expect(page.locator(".document-tool.upcoming")).toHaveCount(0);
   await page.getByRole("button", { name: "แปลงเอกสาร", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "แปลงเอกสาร", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".document-tool")).toHaveCount(5);
+  await expect(page.locator(".document-tool")).toHaveCount(3);
   await expect(page.locator(".document-tool").first()).toContainText(
     "Word เป็น PDF",
   );
   await expect(page.locator(".document-tool").first()).toContainText(
-    "พร้อมใช้งาน",
+    "แปลงเอกสาร",
   );
   await expect(page.locator(".document-tool button")).toHaveCount(0);
   await page.getByRole("button", { name: "ทั้งหมด", exact: true }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".document-tool")).toHaveCount(11);
+  await expect(page.locator(".document-tool")).toHaveCount(9);
   await page
     .getByRole("button", { name: "วิดีโอและเสียง", exact: true })
     .click();
@@ -188,7 +188,24 @@ test("tool directory filters categories and remains readable on desktop and mobi
   ).toHaveCount(1);
   await page.getByRole("button", { name: "ทั้งหมด", exact: true }).click();
   await page.evaluate(() => document.fonts.ready);
+  const rows = await page.locator(".document-tool").evaluateAll((cards) => {
+    const counts = new Map<number, number>();
+    for (const card of cards) {
+      const top = Math.round(card.getBoundingClientRect().top);
+      counts.set(top, (counts.get(top) ?? 0) + 1);
+    }
+    return [...counts.values()];
+  });
+  expect(rows).toEqual([3, 3, 3]);
+  await expect(
+    page.locator('.site-navigation a[href="/tools/pdf-to-powerpoint"]'),
+  ).toHaveCount(2);
   await page.screenshot({ path: "artifacts/home.png", fullPage: true });
+  await page.setViewportSize({ width: 820, height: 1000 });
+  const lastCard = await page.locator(".document-tool").last().boundingBox();
+  expect(Math.abs(lastCard!.x + lastCard!.width / 2 - 410)).toBeLessThan(2);
+  await page.screenshot({ path: "artifacts/home-tablet.png", fullPage: true });
+
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: "artifacts/home-mobile.png", fullPage: true });
   expect(

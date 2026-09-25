@@ -24,7 +24,7 @@ new MutationObserver(navigation).observe(document.body, {
 const directory = document.querySelector<HTMLElement>("[data-tool-directory]");
 if (directory) {
   const container = directory.querySelector(".tool-groups")!;
-  const groups = [
+  const cards = [
     ...container.querySelectorAll<HTMLElement>("[data-tool-category]"),
   ];
   const buttons = [
@@ -39,9 +39,9 @@ if (directory) {
         option.classList.toggle("selected", selected);
       }
       container.replaceChildren(
-        ...groups.filter(
-          (group) =>
-            category === "all" || group.dataset.toolCategory === category,
+        ...cards.filter(
+          (card) =>
+            category === "all" || card.dataset.toolCategory === category,
         ),
       );
       directory.querySelector(".directory-count")!.textContent =

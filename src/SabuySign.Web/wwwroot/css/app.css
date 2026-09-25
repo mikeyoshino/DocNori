@@ -73,3 +73,11 @@ a.tool-launch{display:inline-flex;align-items:center;gap:8px}.tool-launch.tool-p
     color: #348353;
     --category-tint: #dcefe2;
 }
+
+/* A continuous directory avoids sparse rows at category boundaries. */
+.tools-home .tool-groups{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:24px}
+.tools-home .tool-groups>.document-tool{flex:0 1 calc((100% - 48px)/3);height:auto}
+.tools-home .tool-groups .document-tool h3{font-size:21px;font-weight:600;margin:21px 0 10px}
+.tools-home .tool-groups .tool-availability{color:var(--category-text);background:var(--category-wash);text-align:right}
+@media(max-width:1000px){.tools-home .tool-groups>.document-tool{flex-basis:calc((100% - 24px)/2)}}
+@media(max-width:600px){.tools-home .tool-groups{gap:16px}.tools-home .tool-groups>.document-tool{flex-basis:100%}}
