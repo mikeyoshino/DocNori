@@ -9,6 +9,8 @@ await build({
     "word-pdf": "src/SabuySign.Web/Client/word-pdf/index.ts",
     "video-audio": "src/SabuySign.Web/Client/video-audio/index.ts",
     "video-gif": "src/SabuySign.Web/Client/video-gif/index.ts",
+    compress: "src/SabuySign.Web/Client/compress/index.ts",
+    "compress.worker": "src/SabuySign.Web/Client/compress/worker.ts",
     split: "src/SabuySign.Web/Client/split/index.ts",
     merge: "src/SabuySign.Web/Client/merge/index.ts",
     "convert-word": "src/SabuySign.Web/Client/convert-word/index.ts",

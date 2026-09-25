@@ -163,7 +163,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
   await expect(page.locator(".document-tool")).toHaveCount(11);
-  await expect(page.locator(".document-tool.upcoming")).toHaveCount(3);
+  await expect(page.locator(".document-tool.upcoming")).toHaveCount(2);
   await page.getByRole("button", { name: "แปลงเอกสาร", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "แปลงเอกสาร", exact: true }),
@@ -274,7 +274,7 @@ test("cards navigate to dedicated tool pages before asking for a file", async ({
       }),
     ).toBeVisible();
     expect(pickers).toBe(0);
-    if (id === "fill-sign" || id === "merge")
+    if (id === "fill-sign" || id === "merge" || id === "compress")
       await expect(
         page.getByRole("button", { name: "เลือกไฟล์ PDF", exact: true }),
       ).toBeEnabled();

@@ -1,0 +1,76 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>ลดขนาด PDF ออนไลน์ฟรี ไม่ต้องอัปโหลดไฟล์ — DocNori</PageTitle>
+<SiteNav />
+<main class="compress-tool category-optimize" @ref="Root">
+    <input data-file type="file" accept=".pdf,application/pdf" hidden />
+    <p data-error class="cp-error" role="alert" hidden></p>
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="compress" /></span>
+        <h1>ลดขนาด PDF</h1>
+        <p>ไฟล์เล็กลง พร้อมส่งต่อ โดยไฟล์ยังอยู่กับคุณ</p>
+        <div data-drop class="tool-file-drop">
+            <Icon Name="upload" />
+            <button data-choose class="button button-blue" disabled="@(!Ready)">เลือกไฟล์ PDF <Icon Name="arrow" /></button>
+            <p>หรือลากไฟล์มาวางที่นี่</p>
+            <span class="file-limits">1 ไฟล์ · ไม่เกิน 50 MB · สูงสุด 100 หน้า</span>
+        </div>
+        <p class="tool-local-note"><Icon Name="lock" /> ไม่ส่งไฟล์ขึ้นเซิร์ฟเวอร์ · ไม่ต้องสมัครสมาชิก</p>
+        <p data-reading role="status" hidden>กำลังอ่านไฟล์…</p>
+        <div class="gif-seo">
+            <section><h2>ลดขนาดไฟล์ PDF ออนไลน์ฟรี</h2><p>เตรียม PDF สำหรับแนบอีเมล ส่งงาน หรืออัปโหลดเอกสาร เลือกคุณภาพที่ต้องการ ดูขนาดก่อนและหลัง แล้วดาวน์โหลดกลับไปใช้ การลดขนาดทำบนเครื่องของคุณโดยไม่ต้องส่งเอกสารให้เรา</p></section>
+            <section class="gif-seo-faq"><h2>คำถามที่พบบ่อย</h2>
+                <details><summary>ลดขนาด PDF แล้วข้อความภาษาไทยยังอยู่ไหม?</summary><p>เครื่องมือคงข้อความและตำแหน่งเดิมไว้ ไม่แปลงทั้งหน้าเป็นรูปภาพ ข้อความที่เลือกและค้นหาได้อยู่แล้วจะยังใช้งานได้ ส่วนเอกสารสแกนจะยังเป็นภาพตามเดิม ควรตรวจตัวอย่างก่อนนำไปใช้</p></details>
+                <details><summary>ทำไมบางไฟล์ลดขนาดได้น้อย?</summary><p>ผลขึ้นอยู่กับไฟล์ต้นฉบับ รุ่นนี้เน้นลดขนาดภาพ JPEG สีทั่วไปและจัดเก็บโครงสร้าง PDF ให้กระชับ ภาพแบบอื่นหรือภาพที่ซับซ้อนจะเก็บไว้ตามเดิม ไฟล์ที่มีแต่ข้อความหรือบีบอัดมาดีแล้วอาจลดเพิ่มไม่ได้ หากผลลัพธ์ใหญ่กว่าเดิม เราจะเก็บไฟล์ต้นฉบับให้ดาวน์โหลด</p></details>
+                <details><summary>ควรเลือกคุณภาพแบบไหน?</summary><p>เริ่มด้วย “สมดุล” สำหรับส่งต่อทั่วไป เลือก “คุณภาพสูง” หากต้องการรักษารายละเอียดภาพ หรือ “ไฟล์เล็ก” หากต้องการลดขนาดมากขึ้นและยอมให้ภาพคมชัดน้อยลง</p></details>
+                <details><summary>รองรับไฟล์แบบไหน?</summary><p>รองรับ PDF ครั้งละ 1 ไฟล์ ไม่เกิน 50 MB และ 100 หน้า ไม่รองรับไฟล์ที่มีรหัสผ่านหรือลายเซ็นดิจิทัล ใช้เวลาและหน่วยความจำตามขนาดไฟล์และอุปกรณ์ กรุณาดาวน์โหลดก่อนปิดหน้านี้</p></details>
+            </section>
+            <nav class="gif-seo-related" aria-label="เครื่องมือที่เกี่ยวข้อง"><a href="/tools/merge">รวม PDF</a><a href="/tools/split">แยก PDF</a><a href="/tools/fill-sign">กรอกและเซ็น PDF</a></nav>
+        </div>
+    </section>
+    <section data-workspace class="cp-workspace" hidden>
+        <div class="cp-stage">
+            <header class="cp-file-heading"><div><h1 data-name></h1><p data-info></p></div><button data-replace class="button button-light">เปลี่ยนไฟล์</button></header>
+            <div class="cp-preview-toolbar">
+                <div class="cp-tabs" role="group" aria-label="ตัวอย่างเอกสาร"><button data-view="original" aria-pressed="true">ต้นฉบับ</button><button data-view="result" aria-pressed="false" disabled>หลังลดขนาด</button></div>
+                <div class="cp-pages"><button data-prev class="button button-light" aria-label="หน้าก่อนหน้า">‹</button><span data-page></span><button data-next class="button button-light" aria-label="หน้าถัดไป">›</button></div>
+            </div>
+            <p data-preview-status class="cp-preview-status" role="status"></p>
+            <div data-preview class="cp-preview"></div>
+        </div>
+        <aside class="cp-panel" aria-label="ตั้งค่าการลดขนาด">
+            <span class="tool-card-icon"><ToolArtwork Name="compress" /></span>
+            <h2>ลดขนาด PDF</h2><p>เลือกความคมชัดที่เหมาะกับงาน</p>
+            <fieldset data-levels class="cp-levels"><legend class="visually-hidden">คุณภาพของไฟล์</legend>
+                <label><input type="radio" name="compress-quality" value="high" /><span><strong>คุณภาพสูง</strong><small>เก็บรายละเอียดภาพ ลดขนาดเล็กน้อย</small></span></label>
+                <label><input type="radio" name="compress-quality" value="balanced" checked /><span><strong>สมดุล <em>แนะนำ</em></strong><small>ภาพชัด ขนาดเหมาะสำหรับส่งต่อ</small></span></label>
+                <label><input type="radio" name="compress-quality" value="small" /><span><strong>ไฟล์เล็ก</strong><small>ลดขนาดมากขึ้น ภาพคมชัดน้อยลง</small></span></label>
+            </fieldset>
+            <div data-result class="cp-result" hidden aria-live="polite"><strong data-saved></strong><p><span data-before></span> <span aria-hidden="true">→</span> <b data-after></b></p><p data-result-note></p></div>
+            <p data-status role="status" aria-live="polite"></p>
+            <progress data-progress max="100" hidden aria-label="ความคืบหน้าการลดขนาด"></progress>
+            <button data-run class="button button-blue">ลดขนาด PDF <Icon Name="arrow" /></button>
+            <a data-download class="button button-blue" hidden>ดาวน์โหลด PDF <Icon Name="download" /></a>
+            <button data-again class="button button-light" hidden>ปรับคุณภาพอีกครั้ง</button>
+            <p class="cp-privacy"><Icon Name="lock" /> ไฟล์อยู่บนเครื่องคุณเท่านั้น<br />ดาวน์โหลดก่อนปิดหน้านี้</p>
+        </aside>
+    </section>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/compress.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

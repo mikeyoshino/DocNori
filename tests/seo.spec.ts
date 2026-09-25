@@ -98,7 +98,8 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   expect(sitemap.status()).toBe(200);
   expect(await sitemap.text()).toContain("http://localhost:8080/tools/merge");
   expect(await sitemap.text()).not.toContain("/sign<");
-  expect(await sitemap.text()).not.toContain("compress");
+  expect(await sitemap.text()).toContain("/tools/compress");
+  expect(await sitemap.text()).not.toContain("/tools/pdf-to-powerpoint");
   expect(await sitemap.text()).toContain("/tools/video-to-gif");
   expect(await (await request.get("/robots.txt")).text()).toContain(
     "Disallow: /sign",
@@ -220,6 +221,7 @@ test("signing and Word conversion pages never load third-party advertising scrip
     "/sign",
     "/sign-together",
     "/tools/word-to-pdf",
+    "/tools/compress",
     "/tools/pdf-to-word",
   ]) {
     const response = await request.get(path);

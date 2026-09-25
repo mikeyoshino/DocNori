@@ -7,6 +7,7 @@
 @using SabuySign.Web.Features.VideoGif
 @using SabuySign.Web.Features.VideoAudio
 @using SabuySign.Web.Features.WordToPdf
+@using SabuySign.Web.Features.PdfCompress
 @switch (ToolId)
 {
     case "word-to-pdf": <WordToPdf /> break;
@@ -14,6 +15,7 @@
     case "video-to-mp3": <VideoAudio /> break;
     case "video-to-gif": <VideoGif /> break;
     case "merge": <Merge /> break;
+    case "compress": <Compress /> break;
     case "split": <Split /> break;
     case "pdf-to-word": <ConvertWord /> break;
     case "pdf-to-jpg": <ConvertJpg /> break;

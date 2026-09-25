@@ -4,3 +4,30 @@
 @media(prefers-reduced-motion:reduce){.wp-file{transition:none}.wp-file.is-working [data-file-status]:before{animation:none}}
 .wp-panel>.tool-card-icon{background:none}.wp-panel>.tool-card-icon svg{width:100%;height:100%}
 @media(max-width:700px){.wp-file{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:start}.wp-file-actions{grid-column:2;margin-left:0}.wp-file-art{padding-top:3px}}
+
+/* Keep the upload hint above the action, including before WebAssembly starts. */
+.word-pdf .tool-file-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+}
+.word-pdf .tool-file-drop > svg {
+    display: block;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+.word-pdf .tool-file-drop > .button {
+    min-height: 48px;
+    max-width: 100%;
+}
+.word-pdf .tool-file-drop > p {
+    margin: 0;
+}
+.word-pdf .tool-file-drop > .file-limits {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.7;
+}
