@@ -31,7 +31,7 @@ jobs:
       - run: dotnet test --no-build
         env:
           SIGNING_TEST_DATABASE: Host=localhost;Port=5432;Database=signingtests;Username=postgres;Password=ci-test-only
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e -- tests/seo.spec.ts
       - run: docker compose -f infra/compose.yaml config --quiet
       - run: docker compose -f infra/compose.yaml up --build -d web

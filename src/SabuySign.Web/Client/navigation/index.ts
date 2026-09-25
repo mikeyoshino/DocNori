@@ -63,7 +63,10 @@ export function init(header: HTMLElement) {
   header.addEventListener(
     "focusout",
     (e) => {
-      if (!header.contains(e.relatedTarget as Node)) {
+      // Safari can blur a summary without focusing the tapped link. Hiding
+      // the menu then removes the link before its click can navigate.
+      // Outside pointer presses are handled separately below.
+      if (e.relatedTarget && !header.contains(e.relatedTarget as Node)) {
         close();
         mobileClose();
       }
