@@ -220,6 +220,8 @@ test("private document tool pages never load third-party advertising scripts", a
 }) => {
   for (const path of [
     "/tools/merge",
+    "/tools/split",
+    "/tools/pdf-to-jpg",
     "/tools/fill-sign",
     "/sign",
     "/sign-together",
