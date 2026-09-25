@@ -294,7 +294,7 @@ export function init(root: HTMLElement) {
           type: single ? "image/jpeg" : "application/zip",
         });
         resultUrl = URL.createObjectURL(blob);
-        resultName = single ? outputs[0].name : "docnory-jpg.zip";
+        resultName = single ? outputs[0].name : "docnori-jpg.zip";
         get("result-summary").textContent =
           `${outputs.length} รูป · ${fileSize(blob.size)}${single ? "" : " · รวมในไฟล์ ZIP"}`;
         get("download").textContent = single

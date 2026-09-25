@@ -293,9 +293,9 @@ export async function convertToWord(
     });
     signal.throwIfAborted();
     const doc = new Document({
-      creator: "DocNory",
+      creator: "DocNori",
       title: "Converted PDF",
-      description: "Converted locally by DocNory",
+      description: "Converted locally by DocNori",
       sections,
     });
     const bytes = new Uint8Array(await Packer.toArrayBuffer(doc));

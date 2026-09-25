@@ -73,8 +73,8 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
     ).toBeVisible();
     await expect(page).toHaveTitle(
       slug === "fill-sign"
-        ? "กรอกข้อความและเซ็น PDF ออนไลน์ฟรี — DocNory"
-        : `${title} — DocNory`,
+        ? "กรอกข้อความและเซ็น PDF ออนไลน์ฟรี — DocNori"
+        : `${title} — DocNori`,
     );
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
       "content",
@@ -132,7 +132,7 @@ test("target pages expose consistent structured data without JavaScript", async 
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
       "content",
-      "DocNory",
+      "DocNori",
     );
     await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute(
       "content",
@@ -140,10 +140,10 @@ test("target pages expose consistent structured data without JavaScript", async 
     );
     if (path === "/") {
       expect(nodes.find((node: any) => node["@type"] === "WebSite").name).toBe(
-        "DocNory",
+        "DocNori",
       );
       await expect(page).toHaveTitle(
-        "เครื่องมือจัดการ PDF ออนไลน์ รองรับภาษาไทย — DocNory",
+        "เครื่องมือจัดการ PDF ออนไลน์ รองรับภาษาไทย — DocNori",
       );
     } else {
       const app = nodes.find((node: any) => node["@type"] === "WebApplication");
@@ -222,4 +222,35 @@ test("signing pages never load third-party advertising scripts", async ({
       "pagead2.googlesyndication.com",
     );
   }
+});
+
+test("DocNori branding and favicon fallbacks are served on nested tool pages", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/tools/video-to-mp3");
+  await expect(page).toHaveTitle(/DocNori$/);
+  await expect(
+    page.getByRole("img", { name: "DocNori", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".docnori-word")).toHaveText("ocNori");
+  for (const [selector, mime, signature] of [
+    ['link[rel="icon"][type="image/png"]', "image/png", "89504e470d0a1a0a"],
+    ['link[rel="icon"][type="image/x-icon"]', "image/", "000001000300"],
+    ['link[rel="apple-touch-icon"]', "image/png", "89504e470d0a1a0a"],
+  ]) {
+    const href = await page.locator(selector).getAttribute("href");
+    expect(href).toBeTruthy();
+    const url = await page.evaluate(
+      (href) => new URL(href!, document.baseURI).href,
+      href,
+    );
+    const response = await request.get(url);
+    expect(response.ok()).toBe(true);
+    expect(response.headers()["content-type"]).toContain(mime);
+    expect((await response.body()).toString("hex").startsWith(signature)).toBe(
+      true,
+    );
+  }
+  expect((await request.get("/favicon.ico")).ok()).toBe(true);
 });

@@ -15,7 +15,7 @@ public static class PublicStructuredData
             {
                 ["@type"] = "WebSite",
                 ["@id"] = home + "#website",
-                ["name"] = "DocNory",
+                ["name"] = "DocNori",
                 ["url"] = home,
                 ["inLanguage"] = "th"
             });
@@ -39,7 +39,7 @@ public static class PublicStructuredData
             {
                 ["@type"] = "WebApplication",
                 ["@id"] = url + "#application",
-                ["name"] = "DocNory กรอกและเซ็น PDF",
+                ["name"] = "DocNori กรอกและเซ็น PDF",
                 ["url"] = url,
                 ["description"] = description,
                 ["inLanguage"] = "th",

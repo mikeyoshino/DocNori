@@ -42,14 +42,14 @@ a.tool-launch{display:inline-flex;align-items:center;gap:8px}.tool-launch.tool-p
 .object-actions .object-delete:hover{background:#fff2f2;border-color:#bd3636;color:#bd3636}
 .object-actions button:focus-visible{outline:2px solid #192b3d;outline-offset:2px}
 
-/* DocNory: a folded document forms the D in the wordmark. */
-@font-face{font-family:DocNoryBrand;src:url('../fonts/Sarabun-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
-.docnory-logo{display:inline-flex;align-items:center;gap:0;line-height:1;white-space:nowrap;color:var(--ink);vertical-align:middle}
-.docnory-symbol{display:block;width:36px;height:42px;flex-shrink:0}
-.docnory-word{font-family:DocNoryBrand,system-ui,sans-serif;font-size:31px;font-weight:800;letter-spacing:-1.3px;margin-left:-1px;padding-bottom:2px}
-.editor-header .docnory-symbol,footer .docnory-symbol{width:29px;height:34px}
-.editor-header .docnory-word,footer .docnory-word{font-size:25px;letter-spacing:-1px}
-@media(max-width:650px){.site-navigation .docnory-symbol{width:31px;height:36px}.site-navigation .docnory-word{font-size:27px}}
+/* DocNori: a folded document forms the D in the wordmark. */
+@font-face{font-family:DocNoriBrand;src:url('../fonts/Sarabun-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+.docnori-logo{display:inline-flex;align-items:center;gap:0;line-height:1;white-space:nowrap;color:var(--ink);vertical-align:middle}
+.docnori-symbol{display:block;width:36px;height:42px;flex-shrink:0}
+.docnori-word{font-family:DocNoriBrand,system-ui,sans-serif;font-size:31px;font-weight:800;letter-spacing:-1.3px;margin-left:-1px;padding-bottom:2px}
+.editor-header .docnori-symbol,footer .docnori-symbol{width:29px;height:34px}
+.editor-header .docnori-word,footer .docnori-word{font-size:25px;letter-spacing:-1px}
+@media(max-width:650px){.site-navigation .docnori-symbol{width:31px;height:36px}.site-navigation .docnori-word{font-size:27px}}
 
 /* File-format colors are shared by menus, cards and tool landing pages. */
 .tool-artwork.artwork-to-jpg,

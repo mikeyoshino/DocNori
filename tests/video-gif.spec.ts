@@ -117,7 +117,7 @@ test("video GIF landing is readable without JavaScript", async ({
     /\/tools\/video-to-gif$/,
   );
   await expect(page).toHaveTitle(
-    "แปลงวิดีโอเป็น GIF ออนไลน์ฟรี | MP4 เป็น GIF — DocNory",
+    "แปลงวิดีโอเป็น GIF ออนไลน์ฟรี | MP4 เป็น GIF — DocNori",
   );
   await expect(page.locator("h1")).toHaveCount(1);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(

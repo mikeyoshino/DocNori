@@ -279,7 +279,7 @@ export function init(root: HTMLElement) {
           : "application/zip",
       });
       resultUrl = URL.createObjectURL(blob);
-      resultName = single ? outputs[0].name : "docnory-word.zip";
+      resultName = single ? outputs[0].name : "docnori-word.zip";
       get("result-summary").textContent =
         `${outputs.length} ไฟล์ Word · ${fileSize(blob.size)}${single ? "" : " · รวมในไฟล์ ZIP"}${entries.some((e) => e.imagePages.length) ? ` · ${entries.reduce((s, e) => s + e.imagePages.length, 0)} หน้าเป็นรูปภาพ แก้ข้อความไม่ได้` : ""}`;
       get("download").textContent = single
