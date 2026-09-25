@@ -9,6 +9,9 @@ await build({
     "word-pdf": "src/SabuySign.Web/Client/word-pdf/index.ts",
     "video-audio": "src/SabuySign.Web/Client/video-audio/index.ts",
     "video-gif": "src/SabuySign.Web/Client/video-gif/index.ts",
+    "image-compress": "src/SabuySign.Web/Client/image-compress/index.ts",
+    "image-compress.worker":
+      "src/SabuySign.Web/Client/image-compress/worker.ts",
     "image-tools": "src/SabuySign.Web/Client/image-tools/index.ts",
     "image-pdf.worker": "src/SabuySign.Web/Client/image-tools/pdf.worker.ts",
     "heic-jpg.worker": "src/SabuySign.Web/Client/image-tools/heic.worker.ts",
@@ -47,6 +50,8 @@ for (const dir of ["wasm", "cmaps", "standard_fonts"])
 // Preserve full dependency licenses alongside the distributed browser bundles.
 const { readdir, readFile, writeFile } = await import("node:fs/promises");
 const packages = [
+  "@jsquash/jpeg",
+  "@jsquash/oxipng",
   "heic-to",
   "docx",
   "jszip",
@@ -109,3 +114,18 @@ await copyFile(
   "node_modules/heic-to/package.json",
   `${dest}/licenses/heic-to/package.json`,
 );
+
+await mkdir(`${dest}/codecs`, { recursive: true });
+await copyFile(
+  "node_modules/@jsquash/jpeg/codec/enc/mozjpeg_enc.wasm",
+  `${dest}/codecs/mozjpeg.wasm`,
+);
+await copyFile(
+  "node_modules/@jsquash/oxipng/codec/pkg/squoosh_oxipng_bg.wasm",
+  `${dest}/codecs/oxipng.wasm`,
+);
+for (const name of ["jpeg", "oxipng"])
+  await copyFile(
+    `node_modules/@jsquash/${name}/codec/LICENSE.codec.md`,
+    `${dest}/licenses/@jsquash-${name}/LICENSE.codec.md`,
+  );

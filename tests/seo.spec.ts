@@ -54,7 +54,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   await expect(
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(11);
+  await expect(page.locator(".document-tool")).toHaveCount(12);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     "http://localhost:8080/",
@@ -229,6 +229,7 @@ test("private document tool pages never load third-party advertising scripts", a
     "/tools/compress",
     "/tools/jpg-to-pdf",
     "/tools/heic-to-jpg",
+    "/tools/compress-image",
     "/tools/pdf-to-word",
   ]) {
     const response = await request.get(path);

@@ -162,7 +162,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(11);
+  await expect(page.locator(".document-tool")).toHaveCount(12);
   await expect(page.locator(".document-tool.upcoming")).toHaveCount(0);
   await page.getByRole("button", { name: "แปลงเอกสาร", exact: true }).click();
   await expect(
@@ -178,7 +178,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(page.locator(".document-tool button")).toHaveCount(0);
   await page.getByRole("button", { name: "ทั้งหมด", exact: true }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".document-tool")).toHaveCount(11);
+  await expect(page.locator(".document-tool")).toHaveCount(12);
   await page
     .getByRole("button", { name: "วิดีโอและเสียง", exact: true })
     .click();
@@ -196,14 +196,14 @@ test("tool directory filters categories and remains readable on desktop and mobi
     }
     return [...counts.values()];
   });
-  expect(rows).toEqual([3, 3, 3, 2]);
+  expect(rows).toEqual([3, 3, 3, 3]);
   await expect(
     page.locator('.site-navigation a[href="/tools/pdf-to-powerpoint"]'),
   ).toHaveCount(2);
   await page.screenshot({ path: "artifacts/home.png", fullPage: true });
   await page.setViewportSize({ width: 820, height: 1000 });
   const lastCard = await page.locator(".document-tool").last().boundingBox();
-  expect(Math.abs(lastCard!.x + lastCard!.width / 2 - 410)).toBeLessThan(2);
+  expect(lastCard!.x).toBeGreaterThan(410);
   await page.screenshot({ path: "artifacts/home-tablet.png", fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });

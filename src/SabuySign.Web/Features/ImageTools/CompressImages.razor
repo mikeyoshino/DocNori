@@ -1,0 +1,55 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>ลดขนาดรูป JPG PNG ออนไลน์ฟรี — DocNori</PageTitle>
+<SiteNav />
+<main class="image-tools category-images" @ref="Root">
+    <input data-files type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" multiple hidden />
+    <p data-error class="wp-error" role="alert" hidden></p>
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="image-compress" /></span>
+        <h1>ลดขนาดรูป JPG และ PNG</h1><p>รูปเล็กลง พร้อมส่งต่อ<br />เปรียบเทียบความชัดก่อนดาวน์โหลด</p>
+        <div class="tool-file-drop"><Icon Name="upload" /><button data-choose class="button button-blue" disabled="@(!Ready)">เลือกรูปภาพ <Icon Name="arrow" /></button><p>หรือลากไฟล์มาวางที่นี่</p><span class="file-limits">สูงสุด 20 รูป · รูปละ 20 MB / 24 ล้านพิกเซล · รวมไม่เกิน 100 MB</span></div>
+        <p class="tool-local-note"><Icon Name="lock" /> ทำบนเครื่องคุณ · ไม่ส่งรูปขึ้นเซิร์ฟเวอร์</p>
+        <p data-reading role="status" hidden>กำลังเตรียมรูปภาพ…</p>
+        <div class="gif-seo tool-guide">
+            <section><h2>ลดขนาดไฟล์รูปภาพก่อนส่งงานหรือแนบอีเมล</h2><p>บีบอัด JPG และ PNG ออนไลน์ฟรีโดยคงความกว้างและความสูงเดิม เลือกรูป กดลดขนาด แล้วดูภาพก่อนและหลัง ดาวน์โหลดแยกรูปหรือรวมเป็น ZIP ได้ ไม่ต้องสมัครสมาชิก</p></section>
+            <section class="gif-seo-faq"><h2>คำถามที่พบบ่อย</h2>
+                <details><summary>ลดขนาดแล้วรูปจะยังชัดไหม?</summary><p>PNG บีบอัดโดยไม่ลดรายละเอียดของภาพและคงพื้นหลังโปร่งใส ส่วน JPG ใช้การบีบอัดที่อาจเสียรายละเอียดบางส่วน โดยเริ่มที่คุณภาพสูง คุณสามารถเปรียบเทียบภาพขนาดจริงก่อนดาวน์โหลด</p></details>
+                <details><summary>ทำไมบางรูปไม่เล็กลง?</summary><p>รูปที่บีบอัดมาดีอยู่แล้วอาจลดเพิ่มไม่ได้ โดยเฉพาะ PNG เราจะให้ไฟล์ต้นฉบับแทนหากผลลัพธ์ไม่เล็กลง พร้อมแจ้งว่า “เล็กอยู่แล้ว” ไม่มีการลดขนาดภาพหรือเปลี่ยนนามสกุลให้อัตโนมัติ</p></details>
+                <details><summary>สีและข้อมูลกล้องจะเปลี่ยนไหม?</summary><p>JPG ที่บีบอัดใหม่จะใช้สีสำหรับแสดงบนหน้าจอและไม่เก็บข้อมูลกล้องหรือ GPS สีจากไฟล์ HDR หรือโปรไฟล์สีพิเศษอาจต่างจากต้นฉบับ หากดาวน์โหลดต้นฉบับแทน ข้อมูลเดิมยังอยู่ ควรตรวจภาพก่อนใช้งาน</p></details>
+                <details><summary>รองรับไฟล์แบบไหน?</summary><p>รองรับ JPG, JPEG และ PNG ภาพนิ่ง รูปละไม่เกิน 20 MB และ 24 ล้านพิกเซล เลือกได้ 20 รูป รวม 100 MB ทำทีละรูปเพื่อลดภาระเครื่อง ไม่รองรับ PNG ภาพเคลื่อนไหว ดาวน์โหลดก่อนปิดหรือรีเฟรชหน้า</p></details>
+            </section>
+            <nav class="gif-seo-related" aria-label="เครื่องมือที่เกี่ยวข้อง"><a href="/tools/jpg-to-pdf">รวมรูปเป็น PDF</a><a href="/tools/heic-to-jpg">แปลง HEIC เป็น JPG</a><a href="/tools/compress">ลดขนาด PDF</a></nav>
+        </div>
+    </section>
+    <section data-workspace class="wp-workspace" hidden>
+        <div class="wp-files"><header class="wp-heading"><div><h1>ลดขนาดรูปภาพ</h1><p data-count></p></div><FileSourcePicker Label="เพิ่มรูปภาพ" ShowCloudOptions="false" /></header><p class="image-hint">คงขนาดภาพเดิม · ถ้าลดเพิ่มไม่ได้ จะเก็บต้นฉบับให้คุณ</p><div data-list class="image-list"></div><button data-choose class="wp-add">＋ เพิ่มรูปภาพ</button></div>
+        <aside class="wp-panel"><span class="tool-card-icon"><ToolArtwork Name="image-compress" /></span><h2>ลดขนาดรูปภาพ</h2>
+            <fieldset data-quality class="image-settings"><legend>คุณภาพ JPG</legend><div><label><input type="radio" name="image-quality" value="high" checked /> คุณภาพสูง</label><label><input type="radio" name="image-quality" value="balanced" /> สมดุล</label><label><input type="radio" name="image-quality" value="small" /> ไฟล์เล็ก</label></div></fieldset>
+            <p class="image-hint">PNG รักษารายละเอียดเดิมทุกโหมด<br />JPG ยิ่งเลือกไฟล์เล็ก รายละเอียดอาจลดลง</p>
+            <button data-convert class="button button-blue full">ลดขนาดรูปภาพ <Icon Name="arrow" /></button>
+            <p data-progress role="status" aria-live="polite"></p><p data-summary class="image-hint"></p>
+            <button data-zip class="button button-blue full" hidden>ดาวน์โหลดทั้งหมด (ZIP)</button><button data-clear class="button button-quiet full">เริ่มใหม่</button>
+            <p class="wp-note"><Icon Name="lock" /> ไม่ส่งรูปขึ้นเซิร์ฟเวอร์<br />ดาวน์โหลดก่อนปิดหน้านี้</p>
+        </aside>
+    </section>
+    <dialog data-preview class="wp-preview image-compare-dialog"><header><h2>เปรียบเทียบรูปภาพ</h2><button data-close class="button button-light">ปิดตัวอย่าง</button></header><p data-preview-name class="image-hint"></p><label class="image-actual"><input data-actual type="checkbox" /> ดูขนาดจริง 100% · เลื่อนเพื่อดูรายละเอียด</label><div data-compare class="image-compare"><figure><figcaption>ก่อนลดขนาด <span data-before-size></span></figcaption><div><img data-before alt="ภาพต้นฉบับ" /></div></figure><figure><figcaption>หลังลดขนาด <span data-after-size></span></figcaption><div><img data-after alt="ภาพหลังลดขนาด" /></div></figure></div></dialog>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/image-compress.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}
