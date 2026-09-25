@@ -1,7 +1,7 @@
 @using SabuySign.Web.Features.Tools
 @implements IAsyncDisposable
 @inject IJSRuntime JS
-<PageTitle>PDF เป็น Word — DocNori</PageTitle>
+<PageTitle>แปลง PDF เป็น Word ออนไลน์ สำหรับแก้ไขเอกสาร — DocNori</PageTitle>
 <SiteNav />
 <main class="conversion-tool category-convert" @ref="Root">
     <section data-intro class="tool-start tool-start-intro conversion-intro">
@@ -15,7 +15,19 @@
             <span class="file-limits">1–20 ไฟล์ · ขนาดรวมไม่เกิน 25 MB / 100 หน้า</span>
         </div>
         <p class="tool-local-note"><Icon Name="lock" /> ไฟล์อยู่กับคุณ · ไม่ต้องสมัครสมาชิก</p>
-        <section class="conversion-intro-help"><h2>แปลง PDF เป็น Word ได้อย่างไร?</h2><p>เลือก PDF ที่มีข้อความ แล้วกดแปลงเป็น Word เพื่อดาวน์โหลดไฟล์ .docx หากเลือกหลายไฟล์จะดาวน์โหลดรวมเป็น ZIP หน้าสแกนจะเป็นรูปภาพใน Word จนกว่าจะใช้ OCR</p></section>
+        <div data-tool-guide class="gif-seo tool-guide">
+            <section><h2>แปลง PDF เป็น Word ใน 3 ขั้นตอน</h2>
+                <ol class="gif-seo-steps"><li><strong>เลือก PDF</strong><p>แบบปกติรองรับ 1–20 ไฟล์ ขนาดรวมไม่เกิน 25 MB และ 100 หน้า เหมาะกับ PDF ที่เลือกคัดลอกข้อความได้</p></li><li><strong>เลือกแปลงแบบปกติ</strong><p>กด “แปลงเป็น Word” หากพบหน้าสแกน ระบบจะแจ้งก่อนแปลงต่อ เพราะหน้านั้นจะเป็นรูปภาพที่แก้ตัวหนังสือไม่ได้</p></li><li><strong>ดาวน์โหลดและตรวจทาน</strong><p>ได้ไฟล์ .docx สำหรับเปิดใน Word หากเลือกหลายไฟล์จะได้ ZIP ตรวจข้อความและการจัดหน้าก่อนนำไปใช้งาน</p></li></ol>
+            </section>
+            <section><h2>ผลลัพธ์ขึ้นอยู่กับ PDF ต้นฉบับ</h2><p>ตัวอย่างเช่น PDF รายงานที่เลือกคัดลอกข้อความได้ สามารถนำข้อความไปแก้ต่อใน Word ได้ ส่วนแบบฟอร์มที่สแกนเป็นภาพจะยังเป็นภาพใน Word การแปลงแบบปกติไม่ได้อ่านข้อความจากภาพ</p></section>
+            <section class="gif-seo-faq"><h2>คำถามเกี่ยวกับ PDF เป็น Word</h2>
+                <details><summary>แปลง PDF ภาษาไทยแล้วต้องตรวจอะไรบ้าง?</summary><p>ตรวจสระ วรรณยุกต์ ช่องว่าง และการตัดบรรทัด โดยเทียบกับ PDF เดิม ฟอนต์และวิธีสร้าง PDF อาจทำให้ข้อความหรือตำแหน่งต่างไป โดยเฉพาะชื่อ ตัวเลข และข้อความสำคัญ</p></details>
+                <details><summary>ตารางและรูปแบบจะเหมือนต้นฉบับไหม?</summary><p>ไม่รับประกันว่าการจัดหน้าจะเหมือนเดิมทุกจุด แบบปกติไม่ได้สร้างเส้นตารางเป็นตาราง Word ที่แก้ไขได้ คอลัมน์ ระยะห่าง และจำนวนหน้าอาจเปลี่ยน รูปภาพในหน้าที่มีข้อความจะอยู่ต่อจากข้อความของหน้านั้น</p></details>
+                <details><summary>ทำไมบางหน้าแก้ไขข้อความไม่ได้?</summary><p>หน้าสแกนและภาพถ่ายไม่มีข้อความให้ดึงออกมา แบบปกติจึงนำทั้งหน้าไปวางเป็นรูปภาพ หากต้องการแก้ตัวหนังสือในภาพ ต้องใช้ OCR ซึ่งเป็นการอ่านข้อความจากภาพ และต้องตรวจความถูกต้องอีกครั้ง</p></details>
+                <details><summary>แปลงฟรีไหม และไฟล์ถูกส่งไปที่ไหน?</summary><p>แปลงแบบปกติฟรีบนเครื่องคุณ โดยไม่ส่งเอกสารขึ้นเซิร์ฟเวอร์ หากมีบริการ OCR ให้เลือก ให้ตรวจราคา ข้อจำกัด และเงื่อนไขการส่งเอกสารที่แสดงก่อนเริ่มใช้บริการ ดาวน์โหลดไฟล์ก่อนปิดหน้านี้</p></details>
+            </section>
+            <nav class="gif-seo-related" aria-label="เครื่องมือที่เกี่ยวข้อง"><a href="/tools/word-to-pdf">แปลง Word กลับเป็น PDF</a><a href="/tools/fill-sign">กรอกและเซ็น PDF</a><a href="/tools/split">แยกหน้า PDF</a></nav>
+        </div>
     </section>
     <input data-files type="file" accept="application/pdf,.pdf" multiple disabled="@(!Ready)" hidden />
     <div data-workspace class="conversion-workspace" hidden>

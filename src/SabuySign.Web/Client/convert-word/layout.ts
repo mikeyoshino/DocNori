@@ -15,9 +15,39 @@ export interface TextLine {
 }
 export function textLines(items: PositionedText[]): TextLine[] {
   const rows: PositionedText[][] = [];
-  for (const item of items
-    .filter((i) => i.text && [i.x, i.y, i.width, i.size].every(Number.isFinite))
-    .sort((a, b) => a.y - b.y || a.x - b.x)) {
+  const valid = items.filter(
+    (i) => i.text && [i.x, i.y, i.width, i.size].every(Number.isFinite),
+  );
+  // Only attach isolated marks to a unique single-consonant glyph. Never guess
+  // which character inside a multi-character run owns a displaced mark.
+  const bases = valid
+    .filter((i) => /^[\u0e01-\u0e2e]$/u.test(i.text))
+    .sort((a, b) => a.y - b.y);
+  const positioned = valid.map((item) => {
+    if (!/^[\u0e31\u0e34-\u0e3a\u0e47-\u0e4e]+$/u.test(item.text)) return item;
+    const range = item.size * 0.6;
+    let lo = 0,
+      hi = bases.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (bases[mid].y < item.y - range) lo = mid + 1;
+      else hi = mid;
+    }
+    let match: PositionedText | undefined;
+    for (let i = lo; i < bases.length && bases[i].y <= item.y + range; i++) {
+      const base = bases[i];
+      if (
+        Math.abs(base.y - item.y) > Math.min(base.size, item.size) * 0.6 ||
+        item.x < base.x ||
+        item.x >= base.x + base.width
+      )
+        continue;
+      if (match) return item;
+      match = base;
+    }
+    return match ? { ...item, y: match.y } : item;
+  });
+  for (const item of positioned.sort((a, b) => a.y - b.y || a.x - b.x)) {
     // Sorted baselines only need the current row; scanning all prior rows
     // would make large text PDFs quadratic.
     const current = rows.at(-1);

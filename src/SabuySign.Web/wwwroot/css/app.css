@@ -81,3 +81,6 @@ a.tool-launch{display:inline-flex;align-items:center;gap:8px}.tool-launch.tool-p
 .tools-home .tool-groups .tool-availability{color:var(--category-text);background:var(--category-wash);text-align:right}
 @media(max-width:1000px){.tools-home .tool-groups>.document-tool{flex-basis:calc((100% - 24px)/2)}}
 @media(max-width:600px){.tools-home .tool-groups{gap:16px}.tools-home .tool-groups>.document-tool{flex-basis:100%}}
+.tool-start .tool-guide h2 { font-size: clamp(21px, 3vw, 27px); line-height: 1.5; margin: 0 0 18px; }
+.tool-start .tool-guide p { font-size: 16px; line-height: 1.9; max-width: none; margin: 8px 0 16px; color: var(--muted); }
+.tool-guide li { line-height: 1.8; }

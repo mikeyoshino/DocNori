@@ -1,0 +1,65 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>@Title ออนไลน์ฟรี — DocNori</PageTitle>
+<SiteNav />
+<main class="image-tools category-images" data-mode="@Mode" @ref="Root">
+    <input data-files type="file" accept="@(IsPdf ? ".jpg,.jpeg,.png,image/jpeg,image/png" : ".heic,.heif,image/heic,image/heif")" multiple hidden />
+    <p data-error class="wp-error" role="alert" hidden></p>
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="@Artwork" /></span><h1>@Title</h1>
+        <p>@(IsPdf ? "รวมรูปเอกสารหลายรูป เป็น PDF ไฟล์เดียว" : "เปลี่ยนรูปจาก iPhone ให้เปิดและส่งต่อได้ง่าย")</p>
+        <div data-drop class="tool-file-drop"><Icon Name="upload" /><button data-choose class="button button-blue" disabled="@(!Ready)">@(IsPdf ? "เลือกรูปภาพ" : "เลือกไฟล์ HEIC") <Icon Name="arrow" /></button><p>หรือลากไฟล์มาวางที่นี่</p><span class="file-limits">สูงสุด 20 ไฟล์ · ไฟล์ละ 20 MB · รวมไม่เกิน 100 MB</span></div>
+        <p class="tool-local-note"><Icon Name="lock" /> รูปอยู่บนเครื่องคุณ · ไม่ส่งไฟล์ขึ้นเซิร์ฟเวอร์</p>
+        <p data-reading role="status" hidden>กำลังเตรียมรูปภาพ…</p>
+        <div class="gif-seo"><section><h2>@Title ออนไลน์ ไม่ต้องติดตั้งโปรแกรม</h2><p>@(IsPdf ? "แปลง JPG และ PNG เป็น PDF ฟรี เหมาะสำหรับรูปเอกสาร ใบเสร็จ หรือรูปถ่ายหลายหน้า จัดลำดับ หมุนรูป เลือกขนาดกระดาษและขอบ แล้วดูตัวอย่างก่อนดาวน์โหลด" : "แปลง HEIC และ HEIF เป็น JPG ฟรี เลือกได้หลายไฟล์ แปลงทีละรูปบนเครื่องคุณ แล้วดาวน์โหลดแยกหรือรวมเป็น ZIP ไม่ต้องสมัครสมาชิก")</p></section><section class="gif-seo-faq"><h2>คำถามที่พบบ่อย</h2>
+        @if (IsPdf)
+        {
+            <details><summary>แต่ละรูปจะอยู่หน้าเดียวกันไหม?</summary><p>แต่ละรูปจะเป็น PDF คนละหน้าในไฟล์เดียว เรียงตามรายการที่คุณจัดไว้ รูปจะพอดีกับกระดาษโดยไม่ตัดขอบภาพ</p></details>
+            <details><summary>รูปจะคมชัดแค่ไหน?</summary><p>รูปขนาดใหญ่จะปรับด้านยาวไม่เกิน 4,096 พิกเซล เพื่อให้ทำงานบนเครื่องคุณได้สะดวก PNG คงความคมชัดของตัวหนังสือ และ JPG ใช้คุณภาพสูง โปรดตรวจตัวอย่างก่อนพิมพ์</p></details>
+        }
+        else
+        {
+            <details><summary>แปลงหลายไฟล์พร้อมกันได้ไหม?</summary><p>เลือกได้สูงสุด 20 ไฟล์ ระบบจะทำทีละรูปเพื่อลดการใช้หน่วยความจำ ไฟล์ที่สำเร็จดาวน์โหลดได้แม้บางไฟล์แปลงไม่ได้ รองรับรูปสูงสุด 50 ล้านพิกเซล</p></details>
+            <details><summary>Live Photo และข้อมูลกล้องจะถูกเก็บไว้ไหม?</summary><p>แปลงเฉพาะภาพหลักเป็น JPG ไม่รวมวิดีโอหรือภาพย่อยในไฟล์ และไม่เก็บข้อมูลตำแหน่ง GPS หรือข้อมูลกล้อง สี HDR อาจต่างจากต้นฉบับ ควรตรวจรูปก่อนนำไปใช้</p></details>
+        }
+        <details><summary>รูปของฉันถูกส่งไปที่ไหน?</summary><p>การแปลงทำบนเครื่องของคุณ ไม่มีการอัปโหลดรูป กรุณาดาวน์โหลดก่อนปิดหรือรีเฟรชหน้านี้ ใช้เบราว์เซอร์รุ่นล่าสุดเพื่อให้รองรับการแปลงรูป</p></details></section></div>
+    </section>
+    <section data-workspace class="wp-workspace" hidden>
+        <div class="wp-files"><header class="wp-heading"><div><h1>@Title</h1><p data-count></p></div><FileSourcePicker Label="เพิ่มรูปภาพ" ShowCloudOptions="false" /></header><p class="image-hint">@(IsPdf ? "เรียงรูปด้วยปุ่มลูกศร หรือลากการ์ดเพื่อย้ายตำแหน่ง" : "แปลงทีละรูป แล้วดาวน์โหลดไฟล์ที่สำเร็จได้เลย")</p><div data-list class="image-list"></div><button data-choose class="wp-add">＋ เพิ่มรูปภาพ</button></div>
+        <aside class="wp-panel"><span class="tool-card-icon"><ToolArtwork Name="@Artwork" /></span><h2>@(IsPdf ? "จัดหน้าเอกสาร" : "พร้อมแปลงเป็น JPG")</h2>
+        @if (IsPdf)
+        {
+            <fieldset data-settings class="image-settings"><legend>ขนาดกระดาษ</legend><div><label><input type="radio" name="image-paper" value="a4" checked /> A4</label><label><input type="radio" name="image-paper" value="letter" /> Letter</label><label><input type="radio" name="image-paper" value="image" /> ตามรูป</label></div><h3>แนวกระดาษ</h3><div><label><input type="radio" name="image-orientation" value="auto" checked /> อัตโนมัติ</label><label><input type="radio" name="image-orientation" value="portrait" /> แนวตั้ง</label><label><input type="radio" name="image-orientation" value="landscape" /> แนวนอน</label></div><h3>ขอบกระดาษ</h3><div><label><input type="radio" name="image-margin" value="0" /> ไม่มี</label><label><input type="radio" name="image-margin" value="18" checked /> เล็ก</label><label><input type="radio" name="image-margin" value="36" /> ใหญ่</label></div></fieldset>
+        }
+        else
+        {<p>JPG คุณภาพสูง ขนาดภาพเดิม<br />ดาวน์โหลดแยกหรือรวมเป็น ZIP</p>}
+        <button data-convert class="button button-blue full">@(IsPdf ? "สร้าง PDF" : "แปลงเป็น JPG") <Icon Name="arrow" /></button>
+        <button data-view-pdf class="button button-light full" hidden>ดูตัวอย่าง PDF</button><a data-download class="button button-blue full" download hidden>ดาวน์โหลด PDF <Icon Name="download" /></a><button data-zip class="button button-blue full" hidden>ดาวน์โหลดทั้งหมด (ZIP)</button>
+        <p data-progress role="status" aria-live="polite"></p><button data-clear class="button button-quiet full">เริ่มใหม่</button><p class="wp-note"><Icon Name="lock" /> ไม่ส่งรูปขึ้นเซิร์ฟเวอร์<br />ดาวน์โหลดก่อนปิดหน้านี้</p>
+        @if (IsPdf){<div data-related class="image-related" hidden><p>นำ PDF ที่ดาวน์โหลดไปใช้ต่อ</p><a href="/tools/merge">รวมกับ PDF อื่น →</a><a href="/tools/compress">ลดขนาด PDF →</a></div>}
+        </aside>
+    </section>
+    <dialog data-preview class="wp-preview"><header><h2>ตัวอย่าง PDF</h2><button data-close class="button button-light">ปิดตัวอย่าง</button></header><div data-canvas class="wp-canvas"></div><p data-preview-status role="status"></p><footer><button data-prev class="button button-light" aria-label="หน้าก่อนหน้า">‹</button><span data-page></span><button data-next class="button button-light" aria-label="หน้าถัดไป">›</button></footer></dialog>
+</main>
+@code {
+    [Parameter] public string Mode { get; set; } = "pdf";
+    private bool IsPdf => Mode == "pdf";
+    private string Title => IsPdf ? "JPG / PNG เป็น PDF" : "HEIC เป็น JPG";
+    private string Artwork => IsPdf ? "image-pdf" : "heic-jpg";
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/image-tools.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

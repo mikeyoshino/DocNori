@@ -9,6 +9,9 @@ await build({
     "word-pdf": "src/SabuySign.Web/Client/word-pdf/index.ts",
     "video-audio": "src/SabuySign.Web/Client/video-audio/index.ts",
     "video-gif": "src/SabuySign.Web/Client/video-gif/index.ts",
+    "image-tools": "src/SabuySign.Web/Client/image-tools/index.ts",
+    "image-pdf.worker": "src/SabuySign.Web/Client/image-tools/pdf.worker.ts",
+    "heic-jpg.worker": "src/SabuySign.Web/Client/image-tools/heic.worker.ts",
     compress: "src/SabuySign.Web/Client/compress/index.ts",
     "compress.worker": "src/SabuySign.Web/Client/compress/worker.ts",
     split: "src/SabuySign.Web/Client/split/index.ts",
@@ -20,6 +23,11 @@ await build({
     mobile: "src/SabuySign.Web/Client/signatures/mobile.ts",
     dropdown: "src/SabuySign.Web/Client/shared/dropdown.ts",
   },
+  alias: {
+    "docnori-heif":
+      "./node_modules/heic-to/src/lib/libheif-without-unsafe-eval.js",
+  },
+  external: ["fs", "path", "crypto"],
   bundle: true,
   format: "esm",
   target: "es2022",
@@ -39,6 +47,7 @@ for (const dir of ["wasm", "cmaps", "standard_fonts"])
 // Preserve full dependency licenses alongside the distributed browser bundles.
 const { readdir, readFile, writeFile } = await import("node:fs/promises");
 const packages = [
+  "heic-to",
   "docx",
   "jszip",
   "xml",
@@ -86,4 +95,17 @@ for (const name of packages) {
 await writeFile(
   `${dest}/licenses/inventory.json`,
   JSON.stringify(inventory, null, 2),
+);
+
+// Ship the decoder source and license alongside the LGPL browser bundle.
+await cp("node_modules/heic-to/src", `${dest}/licenses/heic-to/src`, {
+  recursive: true,
+});
+await copyFile(
+  "node_modules/heic-to/esbuild.mjs",
+  `${dest}/licenses/heic-to/esbuild.mjs`,
+);
+await copyFile(
+  "node_modules/heic-to/package.json",
+  `${dest}/licenses/heic-to/package.json`,
 );

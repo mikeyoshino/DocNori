@@ -10,6 +10,7 @@ public static class ToolCatalog
         new("organize", "จัดการไฟล์ PDF"),
         new("optimize", "ลดขนาดไฟล์"),
         new("convert", "แปลงเอกสาร"),
+        new("images", "รูปภาพ"),
         new("media", "วิดีโอและเสียง")
     ];
     public static IReadOnlyList<DocumentTool> Tools { get; } = [
@@ -19,6 +20,8 @@ public static class ToolCatalog
         new("merge", "organize", "รวมไฟล์ PDF", "รวมเอกสารหลายไฟล์เป็น PDF เดียว พร้อมจัดลำดับไฟล์ตามต้องการ", "merge", "PDF + PDF", true),
         new("split", "organize", "แยกไฟล์ PDF", "แยกหน้าที่ต้องการจาก PDF ออกเป็นเอกสารใหม่", "split", "PDF → PDF", true),
         new("compress", "optimize", "ลดขนาด PDF", "เตรียมไฟล์ขนาดเล็กลงสำหรับแนบอีเมล ส่งต่อ หรืออัปโหลด", "compress", "PDF", true),
+        new("jpg-to-pdf", "convert", "JPG / PNG เป็น PDF", "รวมรูปเอกสารหลายรูปเป็น PDF จัดลำดับ หมุนรูป และเลือกขนาดกระดาษได้", "image-pdf", "JPG / PNG → PDF", true),
+        new("heic-to-jpg", "images", "HEIC เป็น JPG", "แปลงรูปจาก iPhone หลายไฟล์บนเครื่องคุณ ดาวน์โหลดแยกหรือรวมเป็น ZIP", "heic-jpg", "HEIC / HEIF → JPG", true),
         new("word-to-pdf", "convert", "Word เป็น PDF", "แปลงเอกสาร Word เป็น PDF สำหรับส่งต่อและเปิดอ่าน", "convert", "DOC / DOCX → PDF", true),
         new("pdf-to-jpg", "convert", "PDF เป็น JPG", "แปลงแต่ละหน้าเป็นรูป JPG หรือดึงรูปภาพใน PDF เลือกคุณภาพแล้วดาวน์โหลดได้ฟรี ไฟล์ไม่ถูกส่งขึ้นเซิร์ฟเวอร์", "to-jpg", "PDF → JPG", true),
         new("pdf-to-word", "convert", "PDF เป็น Word", "แปลง PDF เป็นเอกสาร Word เพื่อนำไปแก้ไขต่อ", "from-pdf", "PDF → DOCX", true),

@@ -54,7 +54,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   await expect(
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(9);
+  await expect(page.locator(".document-tool")).toHaveCount(11);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     "http://localhost:8080/",
@@ -74,7 +74,9 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
     await expect(page).toHaveTitle(
       slug === "fill-sign"
         ? "กรอกข้อความและเซ็น PDF ออนไลน์ฟรี — DocNori"
-        : `${title} — DocNori`,
+        : slug === "merge"
+          ? "รวมไฟล์ PDF ออนไลน์ฟรี จัดลำดับไฟล์ได้ — DocNori"
+          : `${title} — DocNori`,
     );
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
       "content",
@@ -200,7 +202,7 @@ test("landing uses static SSR and tools start only the WebAssembly runtime", asy
   });
   await page.goto("/");
   await page.getByRole("button", { name: "แปลงเอกสาร", exact: true }).click();
-  await expect(page.locator(".document-tool")).toHaveCount(3);
+  await expect(page.locator(".document-tool")).toHaveCount(4);
   expect(
     requests.filter((url) => /\.wasm(?:\?|$)|blazor\.boot|_blazor\//.test(url)),
   ).toEqual([]);
@@ -222,6 +224,8 @@ test("signing and Word conversion pages never load third-party advertising scrip
     "/sign-together",
     "/tools/word-to-pdf",
     "/tools/compress",
+    "/tools/jpg-to-pdf",
+    "/tools/heic-to-jpg",
     "/tools/pdf-to-word",
   ]) {
     const response = await request.get(path);

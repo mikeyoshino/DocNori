@@ -8,8 +8,11 @@
 @using SabuySign.Web.Features.VideoAudio
 @using SabuySign.Web.Features.WordToPdf
 @using SabuySign.Web.Features.PdfCompress
+@using SabuySign.Web.Features.ImageTools
 @switch (ToolId)
 {
+    case "jpg-to-pdf": <ImageWorkbench Mode="pdf" /> break;
+    case "heic-to-jpg": <ImageWorkbench Mode="heic" /> break;
     case "word-to-pdf": <WordToPdf /> break;
     case "fill-sign": <Editor /> break;
     case "video-to-mp3": <VideoAudio /> break;

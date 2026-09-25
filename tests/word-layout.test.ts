@@ -36,3 +36,38 @@ test("repairs inferred Thai spaces only when original glyph text matches exactly
   assert.equal(restoreThaiSpacing("ไทย ทดสอบ", "ไทย ต่างกัน"), "ไทย ทดสอบ");
   assert.equal(restoreThaiSpacing("ไทย ทดสอบ", "ไทย ทดสอบ"), "ไทย ทดสอบ");
 });
+
+test("keeps a separately raised Thai tone mark with its base character", () => {
+  const lines = textLines([
+    { text: "น", x: 10, y: 20, width: 8, size: 14 },
+    { text: "้", x: 13, y: 15, width: 0, size: 14 },
+    { text: "ำ", x: 18, y: 20, width: 8, size: 14 },
+  ]);
+  assert.deepEqual(
+    lines.map((line) => line.text),
+    ["น้ำ"],
+  );
+});
+
+test("keeps a separately lowered Thai vowel with its base character", () => {
+  const lines = textLines([
+    { text: "ก", x: 10, y: 20, width: 8, size: 14 },
+    { text: "ุ", x: 13, y: 25, width: 0, size: 14 },
+    { text: "ง", x: 18, y: 20, width: 8, size: 14 },
+  ]);
+  assert.deepEqual(
+    lines.map((line) => line.text),
+    ["กุง"],
+  );
+});
+
+test("does not guess ambiguous marks between adjacent Thai baselines or mutate input", () => {
+  const items = [
+    { text: "ก", x: 10, y: 20, width: 8, size: 14 },
+    { text: "ข", x: 10, y: 30, width: 8, size: 14 },
+    { text: "้", x: 13, y: 25, width: 0, size: 14 },
+  ];
+  const copy = structuredClone(items);
+  assert.equal(textLines(items).length, 3);
+  assert.deepEqual(items, copy);
+});
