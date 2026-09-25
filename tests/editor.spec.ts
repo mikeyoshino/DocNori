@@ -377,6 +377,10 @@ test("shared navigation has direct tools, grouped dropdowns and mobile keyboard 
     .getByRole("link", { name: "PDF เป็น Word" })
     .click();
   await expect(page).toHaveURL(/\/tools\/pdf-to-word$/);
+  // The heading is SSR; wait for hydration before testing the interactive header.
+  await expect(
+    page.getByRole("button", { name: "เลือกไฟล์ PDF", exact: true }),
+  ).toBeEnabled();
   await expect(
     page.getByRole("heading", { name: "PDF เป็น Word", exact: true }),
   ).toBeVisible();

@@ -181,6 +181,15 @@ test("signing page explains the real workflow and static assets can be cached", 
 test("landing uses static SSR and tools start only the WebAssembly runtime", async ({
   page,
 }) => {
+  // This test checks our runtime. AdSense loading/CSP is covered separately;
+  // third-party report-only CSP warnings must not make runtime checks nondeterministic.
+  await page.route("https://pagead2.googlesyndication.com/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: "",
+    }),
+  );
   const requests: string[] = [],
     errors: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
