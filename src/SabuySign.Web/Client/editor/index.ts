@@ -1,3 +1,4 @@
+import { guardUnsavedWork } from "../shared/leave-guard";
 import { SigningSession } from "../signing-sessions/client";
 import { formatDate, localDate, type DateStamp } from "./dates";
 import { installGestureZoom } from "./gesture-zoom";
@@ -270,16 +271,7 @@ export async function init(ref: Bridge) {
     },
     { signal },
   );
-  window.addEventListener(
-    "beforeunload",
-    (e) => {
-      if (dirty()) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    },
-    { signal },
-  );
+  guardUnsavedWork(dirty, signal);
   window.addEventListener(
     "keydown",
     (e) => {

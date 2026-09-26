@@ -1,3 +1,4 @@
+import { guardUnsavedWork } from "./leave-guard";
 export type MediaOptions = {
   kind: "gif" | "mp3" | "word-pdf";
   start?: number;
@@ -15,58 +16,14 @@ export class MediaSession {
   private lifetime = new AbortController();
   constructor(hasLocalWork: () => boolean = () => false) {
     const signal = this.lifetime.signal;
-    let navigationApproved = false;
     addEventListener("pagehide", () => this.leave(), { signal });
-    addEventListener(
-      "beforeunload",
-      (e: BeforeUnloadEvent) => {
-        if (navigationApproved) {
-          navigationApproved = false;
-          return;
-        }
-        if (this.id || hasLocalWork()) {
-          e.preventDefault();
-          e.returnValue = "";
-        }
-      },
-      { signal },
-    );
-    document.addEventListener(
-      "click",
-      (event: MouseEvent) => {
-        const link = (event.target as Element).closest<HTMLAnchorElement>(
-          "a[href]",
-        );
-        if (
-          (!this.id && !hasLocalWork()) ||
-          !link ||
-          link.hasAttribute("download") ||
-          link.target === "_blank" ||
-          event.ctrlKey ||
-          event.metaKey ||
-          event.shiftKey ||
-          event.altKey ||
-          event.button !== 0 ||
-          link.href.startsWith("blob:") ||
-          new URL(link.href).pathname === location.pathname
-        )
-          return;
-        if (
-          !confirm(
-            "ออกจากหน้านี้หรือไม่? งานแปลงและไฟล์ชั่วคราวจะถูกลบ กรุณาดาวน์โหลดไฟล์ก่อนออก",
-          )
-        ) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          return;
-        }
-        // Cancel only on actual departure. A later navigation guard may keep
-        // the page open, in which case the server job must remain alive.
-        navigationApproved = true;
-      },
-      { signal, capture: true },
+    guardUnsavedWork(
+      () => !!this.id || hasLocalWork(),
+      signal,
+      "งานที่กำลังแปลงจะถูกยกเลิก และไฟล์ชั่วคราวจะถูกลบ หากยังไม่ได้ดาวน์โหลด กรุณากลับไปบันทึกก่อน",
     );
   }
+
   leave() {
     if (this.id) {
       const url = `/api/media/${this.id}/leave`;

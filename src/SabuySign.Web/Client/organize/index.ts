@@ -1,3 +1,4 @@
+import { guardUnsavedWork } from "../shared/leave-guard";
 import { createFileSourcePicker } from "../shared/file-source-picker";
 import { MAX_BYTES, MAX_FILES, MAX_PAGES } from "../merge/pdf";
 import { PageHistory, movePage, type OrganizePage } from "./state";
@@ -592,40 +593,8 @@ export function init(root: HTMLElement) {
     },
     { signal },
   );
-  document.addEventListener(
-    "click",
-    (e) => {
-      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>(
-        "a[href]",
-      );
-      if (
-        !link ||
-        e.defaultPrevented ||
-        e.ctrlKey ||
-        e.metaKey ||
-        link.download ||
-        link.target === "_blank" ||
-        !sources.length ||
-        downloaded
-      )
-        return;
-      if (!confirm("ออกจากหน้านี้หรือไม่? กรุณาดาวน์โหลดเอกสารก่อน")) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    },
-    { capture: true, signal },
-  );
-  window.addEventListener(
-    "beforeunload",
-    (e) => {
-      if (sources.length && !downloaded) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    },
-    { signal },
-  );
+
+  guardUnsavedWork(() => sources.length > 0 && !downloaded, signal);
   window.addEventListener("pagehide", reset, { signal });
   sessions.set(root, () => {
     reset();

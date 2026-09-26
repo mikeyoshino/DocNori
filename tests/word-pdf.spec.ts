@@ -206,15 +206,18 @@ test("leaving a partially converted batch confirms once and cancelling navigatio
     timeout: 90000,
   });
   await expect.poll(() => held).toBe(true);
-  let accept = false;
   const dialogs: string[] = [];
   page.on("dialog", async (d) => {
     dialogs.push(d.type());
-    if (accept) await d.accept();
-    else await d.dismiss();
+    await d.dismiss();
   });
-  const link = page.getByRole("link", { name: "รวม PDF", exact: true }).first();
+  await page.locator(".nav-organize summary").click();
+  const link = page.locator('.organize-nav-dropdown a[href="/tools/merge"]');
   await link.click();
+  await page
+    .getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่?" })
+    .getByRole("button", { name: "อยู่หน้านี้ต่อ" })
+    .click();
   await expect(page).toHaveURL(/word-to-pdf/);
   expect(
     (
@@ -225,8 +228,11 @@ test("leaving a partially converted batch confirms once and cancelling navigatio
       ).json()
     ).state,
   ).toBe("uploading");
-  accept = true;
   await link.click();
+  await page
+    .getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่?" })
+    .getByRole("button", { name: "ออกจากหน้านี้", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/tools\/merge$/);
   release();
   await expect
@@ -241,5 +247,5 @@ test("leaving a partially converted batch confirms once and cancelling navigatio
         ).state,
     )
     .toBe("cancelled");
-  expect(dialogs).toEqual(["confirm", "confirm"]);
+  expect(dialogs).toEqual([]);
 });

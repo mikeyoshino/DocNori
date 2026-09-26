@@ -171,11 +171,17 @@ test("leaving during upload cancels work without a cancel button", async ({
       .click();
     await uploading;
     await expect(page.locator("[data-progress]")).toBeVisible();
-    page.once("dialog", (d) => d.dismiss());
     await page.locator(".site-navigation .brand").click();
+    await page
+      .getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่?" })
+      .getByRole("button", { name: "อยู่หน้านี้ต่อ" })
+      .click();
     await expect(page).toHaveURL(/video-to-mp3$/);
-    page.once("dialog", (d) => d.accept());
     await page.locator(".site-navigation .brand").click();
+    await page
+      .getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่?" })
+      .getByRole("button", { name: "ออกจากหน้านี้", exact: true })
+      .click();
     await expect(page).toHaveURL(/\/$/);
     await expect
       .poll(

@@ -134,8 +134,11 @@ test("local compression reduces images, preserves Thai text and pages, and previ
   await page.locator("[data-run]").click();
   await expect(page.locator("[data-download]")).toBeVisible({ timeout: 60000 });
   // Dismissing navigation must retain the result.
-  page.once("dialog", (d) => d.dismiss());
   await page.locator('.site-navigation a[href="/"]').first().click();
+  await page
+    .getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่?" })
+    .getByRole("button", { name: "อยู่หน้านี้ต่อ" })
+    .click();
   await expect(page).toHaveURL(/\/tools\/compress$/);
   await expect(page.locator("[data-download]")).toBeVisible();
   expect(uploads).toEqual([]);

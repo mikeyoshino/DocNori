@@ -1,3 +1,4 @@
+import { guardUnsavedWork } from "../shared/leave-guard";
 import { SplitPreview } from "./preview";
 import { MAX_BYTES, readPdf } from "../merge/pdf";
 import {
@@ -29,6 +30,17 @@ export function init(root: HTMLElement) {
     mode = "ranges",
     rangeMode = "custom",
     ranges: PageRange[] = [{ start: 1, end: 1 }];
+  let savedSource: typeof source;
+  let savedOptions = "";
+  const optionsKey = () =>
+    JSON.stringify([
+      mode,
+      rangeMode,
+      ranges,
+      range.value,
+      size.value,
+      combine.checked,
+    ]);
   const preview = new SplitPreview(
     root,
     (index) => {
@@ -328,6 +340,8 @@ export function init(root: HTMLElement) {
       link.href = url;
       link.download = `${source.name.replace(/\.pdf$/i, "")}-${rest ? "remaining" : "split"}.${extension}`;
       link.click();
+      savedSource = source;
+      savedOptions = optionsKey();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
       busy = false;
       render();
@@ -342,15 +356,9 @@ export function init(root: HTMLElement) {
   };
   selected.addEventListener("click", () => void download(), { signal });
   remaining.addEventListener("click", () => void download(true), { signal });
-  window.addEventListener(
-    "beforeunload",
-    (e) => {
-      if (source) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    },
-    { signal },
+  guardUnsavedWork(
+    () => !!source && (source !== savedSource || optionsKey() !== savedOptions),
+    signal,
   );
   sessions.set(root, () => {
     preview.clear();

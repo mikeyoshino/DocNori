@@ -1,0 +1,16 @@
+/* Shared departure confirmation: native dialog supplies focus trapping/inert background. */
+dialog.leave-dialog{box-sizing:border-box;width:min(460px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);margin:auto;padding:28px;border:1px solid #dce5ed;border-radius:20px;background:#fff;color:#192c3e;box-shadow:0 24px 80px #172c3e33;text-align:left;overflow:auto;font-family:inherit}
+.leave-dialog::backdrop{background:rgba(22,38,53,.46)}
+.leave-dialog .leave-dialog-icon{display:grid;place-items:center;width:48px;height:48px;margin:0 0 20px;border-radius:14px;background:#edf7ff;color:#1689cf}
+.leave-dialog-icon svg{width:26px;height:26px}
+dialog.leave-dialog h2{margin:0 0 12px;font-size:24px;line-height:1.4;font-weight:600;letter-spacing:normal}
+dialog.leave-dialog p{margin:0;color:#5e6d7c;font-size:16px;line-height:1.7}
+.leave-dialog-actions{display:flex;gap:10px;margin-top:28px}
+.leave-dialog-actions button{flex:1;min-height:48px;padding:11px 14px;border:1px solid #d6e1ea;border-radius:10px;font:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s}
+.leave-dialog-actions .leave-dialog-stay{background:#1689cf;border-color:#1689cf;color:white}
+.leave-dialog-actions .leave-dialog-stay:hover{background:#1078b8}
+.leave-dialog-actions .leave-dialog-exit{background:white;color:#415365}
+.leave-dialog-actions .leave-dialog-exit:hover{background:#f3f6f9}
+.leave-dialog-actions button:focus-visible{outline:3px solid #79c6f4;outline-offset:3px}
+@media(max-width:480px){dialog.leave-dialog{padding:24px}.leave-dialog-actions{flex-direction:column}dialog.leave-dialog h2{font-size:22px}}
+@media(prefers-reduced-motion:reduce){.leave-dialog-actions button{transition:none}}

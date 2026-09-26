@@ -1,3 +1,4 @@
+import { guardUnsavedWork } from "../shared/leave-guard";
 import { createFileSourcePicker } from "../shared/file-source-picker";
 import { cover } from "./preview";
 import { MAX_BYTES, MAX_FILES, MAX_PAGES, readPdf, mergePdfs } from "./pdf";
@@ -27,6 +28,7 @@ export function init(root: HTMLElement) {
     root.querySelector<HTMLElement>("[data-file-picker]")!,
     () => input.click(),
   );
+  let savedEntries: typeof entries = [];
   let dragging: number | undefined;
   let ascending = true;
   const fail = (message: string) => {
@@ -302,6 +304,7 @@ export function init(root: HTMLElement) {
         a.href = url;
         a.download = "merged.pdf";
         a.click();
+        savedEntries = [...entries];
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
         busy = false;
         render();
@@ -317,15 +320,12 @@ export function init(root: HTMLElement) {
     },
     { signal },
   );
-  window.addEventListener(
-    "beforeunload",
-    (e) => {
-      if (entries.length) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    },
-    { signal },
+  guardUnsavedWork(
+    () =>
+      entries.length > 0 &&
+      (entries.length !== savedEntries.length ||
+        entries.some((entry, i) => entry !== savedEntries[i])),
+    signal,
   );
   sessions.set(root, () => {
     filePicker.dispose();
