@@ -14,15 +14,17 @@ namespace Accounts.Tests;
 
 public class AccountOriginTests
 {
-    [Fact]
-    public async Task ProxyHttpUsesConfiguredOriginForCsrfAndGoogleCallbackOnly()
+    [Theory]
+    [InlineData("https://trusted.example:8443", "https://trusted.example:8443/signin-google")]
+    [InlineData("https://docnori.com", "https://docnori.com/signin-google")]
+    public async Task ProxyHttpUsesConfiguredOriginForCsrfAndGoogleCallbackOnly(string origin, string expectedCallback)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Accounts:ConnectionString"] = "configured-test",
-            ["Accounts:PublicOrigin"] = "https://trusted.example:8443",
+            ["Accounts:PublicOrigin"] = origin,
             ["Accounts:Google:ClientId"] = "test-client",
             ["Accounts:Google:ClientSecret"] = "test-secret"
         });
@@ -41,7 +43,7 @@ public class AccountOriginTests
         var challenge = await client.GetAsync("/api/account/google");
         Assert.Equal(HttpStatusCode.Redirect, challenge.StatusCode);
         var query = QueryHelpers.ParseQuery(challenge.Headers.Location!.Query);
-        Assert.Equal("https://trusted.example:8443/signin-google", query["redirect_uri"].ToString());
+        Assert.Equal(expectedCallback, query["redirect_uri"].ToString());
         var unchanged = await client.GetFromJsonAsync<JsonElement>("/public-origin");
         Assert.Equal("http", unchanged.GetProperty("scheme").GetString());
         Assert.Equal("internal-proxy", unchanged.GetProperty("host").GetString());

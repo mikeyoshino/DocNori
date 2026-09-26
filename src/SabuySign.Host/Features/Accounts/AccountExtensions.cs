@@ -126,7 +126,9 @@ public static class AccountExtensions
             if (path.StartsWithSegments("/api/account") || path.StartsWithSegments("/api/templates") || path == "/signin-google")
             {
                 context.Request.Scheme = origin.Scheme;
-                context.Request.Host = HostString.FromUriComponent(origin);
+                context.Request.Host = origin.IsDefaultPort
+                    ? new HostString(origin.Host)
+                    : new HostString(origin.Host, origin.Port);
             }
             await next();
         });
