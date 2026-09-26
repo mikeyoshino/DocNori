@@ -1,0 +1,21 @@
+# Dedicated persistent database for the local HTTPS account workspace.
+name: docnori-accounts-dev
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: docnori_accounts
+      POSTGRES_USER: docnori
+      POSTGRES_PASSWORD: ${ACCOUNTS_DEV_DB_PASSWORD:?Set ACCOUNTS_DEV_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:55440:5432"
+    volumes:
+      - accounts-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U docnori -d docnori_accounts"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+volumes:
+  accounts-data:

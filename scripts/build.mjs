@@ -4,7 +4,9 @@ const dest = "src/SabuySign.Web/wwwroot/js";
 await mkdir(dest, { recursive: true });
 await build({
   entryPoints: {
+    templates: "src/SabuySign.Web/Client/templates/index.ts",
     index: "src/SabuySign.Web/Client/editor/index.ts",
+    "decrypt.worker": "src/SabuySign.Web/Client/editor/decrypt.worker.ts",
     "export.worker": "src/SabuySign.Web/Client/editor/export.worker.ts",
     "word-pdf": "src/SabuySign.Web/Client/word-pdf/index.ts",
     "video-audio": "src/SabuySign.Web/Client/video-audio/index.ts",
@@ -52,6 +54,7 @@ for (const dir of ["wasm", "cmaps", "standard_fonts"])
 // Preserve full dependency licenses alongside the distributed browser bundles.
 const { readdir, readFile, writeFile } = await import("node:fs/promises");
 const packages = [
+  "@neslinesli93/qpdf-wasm",
   "@jsquash/jpeg",
   "@jsquash/oxipng",
   "heic-to",
@@ -131,3 +134,10 @@ for (const name of ["jpeg", "oxipng"])
     `node_modules/@jsquash/${name}/codec/LICENSE.codec.md`,
     `${dest}/licenses/@jsquash-${name}/LICENSE.codec.md`,
   );
+
+await copyFile(
+  "node_modules/@neslinesli93/qpdf-wasm/dist/qpdf.wasm",
+  `${dest}/codecs/qpdf.wasm`,
+);
+
+await cp("third-party/qpdf", `${dest}/licenses/qpdf`, { recursive: true });

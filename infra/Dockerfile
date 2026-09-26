@@ -23,7 +23,7 @@ COPY infra/word-pdf/sandbox.c /sandbox.c
 RUN gcc -O2 -Wall -Wextra -Werror /sandbox.c -lseccomp -o /word-sandbox
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libreoffice-writer python3-uno libseccomp2 fonts-thai-tlwg fonts-noto-core fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea && rm -rf /var/lib/apt/lists/* && mkdir -p /media && chown $APP_UID:$APP_UID /media
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libreoffice-writer python3-uno libseccomp2 fonts-thai-tlwg fonts-noto-core fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea && rm -rf /var/lib/apt/lists/* && mkdir -p /media /templates /keys && chown $APP_UID:$APP_UID /media /templates /keys && chmod 700 /templates /keys
 COPY --from=word-sandbox /word-sandbox /usr/local/bin/word-sandbox
 COPY infra/word-pdf/word_pdf.py /usr/local/lib/docnori/word_pdf.py
 COPY src/SabuySign.Web/wwwroot/fonts/*.ttf /usr/local/share/fonts/docnori/

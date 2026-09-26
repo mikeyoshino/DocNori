@@ -17,9 +17,22 @@ services:
       dockerfile: infra/Dockerfile
     volumes:
       - media-data:/media
+      - template-data:/templates
+      - account-keys:/keys
     environment:
       MediaConversion__Enabled: "true"
       MediaConversion__StoragePath: /media
+      Templates__StoragePath: /templates
+      Accounts__DataProtectionPath: /keys
+      Accounts__ConnectionString: Host=postgres;Database=sabuysign;Username=sabuysign;Password=${POSTGRES_PASSWORD:-local-development-only}
+      Accounts__PublicOrigin: ${ACCOUNTS_PUBLIC_ORIGIN:-}
+      Accounts__Google__ClientId: ${ACCOUNTS_GOOGLE_CLIENT_ID:-}
+      Accounts__Google__ClientSecret: ${ACCOUNTS_GOOGLE_CLIENT_SECRET:-}
+      Accounts__Smtp__Host: ${ACCOUNTS_SMTP_HOST:-}
+      Accounts__Smtp__Port: ${ACCOUNTS_SMTP_PORT:-587}
+      Accounts__Smtp__User: ${ACCOUNTS_SMTP_USER:-}
+      Accounts__Smtp__Password: ${ACCOUNTS_SMTP_PASSWORD:-}
+      Accounts__Smtp__From: ${ACCOUNTS_SMTP_FROM:-}
       PublicOrigin: ${PUBLIC_ORIGIN:-http://localhost:8080}
       SigningSessions__ConnectionString: Host=postgres;Database=sabuysign;Username=sabuysign;Password=${POSTGRES_PASSWORD:-local-development-only}
     depends_on:
@@ -68,5 +81,7 @@ services:
       retries: 5
     restart: unless-stopped
 volumes:
+  template-data:
+  account-keys:
   media-data:
   postgres-data:

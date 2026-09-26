@@ -1,0 +1,19 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<SiteNav />
+<main class="document-workspace" @ref="Root"><div class="workspace-loading" role="status" aria-label="กำลังเปิดพื้นที่ทำงาน"><span class="file-select-spinner" aria-hidden="true"></span></div></main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/templates.js");
+        await Module.InvokeVoidAsync("init", Root);
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

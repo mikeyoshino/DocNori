@@ -30,6 +30,7 @@ jobs:
       - run: dotnet build --no-restore
       - run: dotnet test --no-build
         env:
+          TEMPLATES_TEST_DB: Host=localhost;Port=5432;Database=signingtests;Username=postgres;Password=ci-test-only
           SIGNING_TEST_DATABASE: Host=localhost;Port=5432;Database=signingtests;Username=postgres;Password=ci-test-only
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e -- tests/seo.spec.ts

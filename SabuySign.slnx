@@ -7,6 +7,8 @@
     <Project Path="src/SabuySign.Web/SabuySign.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Accounts.Tests/Accounts.Tests.csproj" />
+    <Project Path="tests/Templates.Tests/Templates.Tests.csproj" />
     <Project Path="tests/SabuySign.Signing.Tests/SabuySign.Signing.Tests.csproj" />
     <Project Path="tests/SabuySign.Relay.Tests/SabuySign.Relay.Tests.csproj" />
   </Folder>

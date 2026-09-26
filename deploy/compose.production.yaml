@@ -24,15 +24,23 @@ services:
         condition: service_healthy
     env_file:
       - /etc/docnory/signing.env
+      - path: /etc/docnory/accounts.env
+        required: false
     volumes:
       - media-data:/media
+      - template-data:/templates
+      - account-keys:/keys
     environment:
       MediaConversion__Enabled: "true"
       MediaConversion__StoragePath: /media
+      Templates__StoragePath: /templates
+      Accounts__DataProtectionPath: /keys
+      Accounts__PublicOrigin: ${DOCNORY_PUBLIC_ORIGIN:?Set the public HTTPS origin}
       ASPNETCORE_ENVIRONMENT: Production
       PublicOrigin: ${DOCNORY_PUBLIC_ORIGIN:?Set the public HTTPS origin}
     networks:
       - backend
+      - account-egress
 
   media-worker:
     image: ${DOCNORY_HOST_IMAGE:?Set an immutable DocNory host image digest}
@@ -85,10 +93,13 @@ services:
       retries: 12
 
 volumes:
+  template-data:
+  account-keys:
   media-data:
   signing-data:
 
 networks:
+  account-egress:
   backend:
     internal: true
   frontend:

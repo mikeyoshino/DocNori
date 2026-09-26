@@ -1,0 +1,10 @@
+@page "/account/{Action}"
+@page "/workspace/{*WorkspacePath}"
+@using SabuySign.Web.Features.DocumentTemplates
+<PageTitle>พื้นที่ของฉัน — DocNori</PageTitle>
+<HeadContent><meta name="robots" content="noindex,nofollow" /></HeadContent>
+<Workspace @rendermode="InteractiveWebAssembly" />
+@code {
+    [Parameter] public string? Action { get; set; }
+    [Parameter] public string? WorkspacePath { get; set; }
+}

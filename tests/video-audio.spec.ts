@@ -112,6 +112,10 @@ test("leaving the conversion page cancels its server job and revokes download", 
   expect((await request.get(jobUrl)).status()).toBe(404);
   page.on("dialog", (d) => d.accept());
   await page.locator(".site-navigation .brand").click();
+  await page
+    .getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่?" })
+    .getByRole("button", { name: "ออกจากหน้านี้", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/$/);
   await expect
     .poll(

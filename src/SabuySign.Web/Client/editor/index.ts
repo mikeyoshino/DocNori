@@ -1,3 +1,4 @@
+import { unlockPdf } from "./password";
 import { guardUnsavedWork } from "../shared/leave-guard";
 import { SigningSession } from "../signing-sessions/client";
 import { formatDate, localDate, type DateStamp } from "./dates";
@@ -415,6 +416,8 @@ export function pick() {
   if (!busy && !shared?.active) $<HTMLInputElement>("pdf-file").click();
 }
 async function openFile(file: File, internal = false) {
+  const openSignal = lifetime.signal;
+  let unlocked = false;
   if (shared?.active && !internal) return;
   if (busy || (!internal && shared?.locked)) return;
   if (
@@ -430,10 +433,32 @@ async function openFile(file: File, internal = false) {
   try {
     if (file.size > LIMIT_BYTES)
       throw new Error("ไฟล์ใหญ่เกิน 25 MB กรุณาใช้ไฟล์ที่เล็กลง");
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    await validatePdf(bytes);
+    let bytes = new Uint8Array(await file.arrayBuffer());
+    try {
+      await validatePdf(bytes);
+    } catch (e) {
+      // pdf-lib's ES5 Error subclass does not retain instanceof identity.
+      if (
+        !(e instanceof Error) ||
+        !e.message.startsWith(
+          "Input document to `PDFDocument.load` is encrypted.",
+        )
+      )
+        throw e;
+      const opened = await unlockPdf(bytes, openSignal);
+      if (!opened || openSignal.aborted) return;
+      unlocked = true;
+      bytes = new Uint8Array(opened);
+      await validatePdf(bytes);
+    }
+    if (openSignal.aborted) return;
     candidate = getDocument({ ...options, data: bytes.slice() });
     const loaded = await candidate.promise;
+    if (openSignal.aborted) {
+      await candidate.destroy();
+      candidate = null;
+      return;
+    }
     const first = await loaded.getPage(1);
     const viewport = first.getViewport({ scale: 1 });
     if (
@@ -448,6 +473,7 @@ async function openFile(file: File, internal = false) {
     candidate = null;
     doc = loaded;
     original = bytes;
+    sourceUnlocked = unlocked;
     filename = file.name;
     session = new Session(layoutTextItem);
     editingTextId = null;
@@ -471,7 +497,7 @@ async function openFile(file: File, internal = false) {
     await report(e);
   } finally {
     busy = false;
-    await notify();
+    if (!openSignal.aborted) await notify();
   }
 }
 async function renderPage(onLayout?: () => void) {
@@ -1000,6 +1026,7 @@ function generate(): Promise<Uint8Array> {
     });
   });
 }
+let sourceUnlocked = false;
 async function preview() {
   if (!original) return;
   busy = true;
@@ -1012,6 +1039,7 @@ async function preview() {
     if (session.revision !== revision)
       throw new Error("เอกสารเปลี่ยนระหว่างสร้างตัวอย่าง กรุณาลองใหม่");
     outputRevision = revision;
+    $("preview-password-note").hidden = !sourceUnlocked;
     previewTask = getDocument({ ...options, data: output.slice() });
     previewDoc = await previewTask.promise;
     previewPage = pageNumber;
@@ -1281,6 +1309,7 @@ async function releaseDocument() {
   task = null;
   doc = null;
   original = null;
+  sourceUnlocked = false;
   $("text-layer")?.replaceChildren();
   $("thumbnails")?.replaceChildren();
   const c = $<HTMLCanvasElement>("page-canvas");

@@ -7,3 +7,5 @@ playwright-report/
 artifacts/
 .env
 .DS_Store
+
+.local/

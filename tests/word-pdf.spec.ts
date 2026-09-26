@@ -228,6 +228,11 @@ test("leaving a partially converted batch confirms once and cancelling navigatio
       ).json()
     ).state,
   ).toBe("uploading");
+  if (
+    !(await page.locator(".nav-organize").getAttribute("open")) &&
+    !(await link.isVisible())
+  )
+    await page.locator(".nav-organize summary").click();
   await link.click();
   await page
     .getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่?" })
