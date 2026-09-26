@@ -1,3 +1,5 @@
+import { leaveAfterConfirmation } from "../shared/leave-guard";
+import { api, post, confirmAction } from "../templates/api";
 const lifetimes = new WeakMap<HTMLElement, () => void>();
 export function init(header: HTMLElement) {
   dispose(header);
@@ -7,6 +9,54 @@ export function init(header: HTMLElement) {
     ...header.querySelectorAll<HTMLDetailsElement>(".nav-disclosure"),
   ];
   const toggle = header.querySelector<HTMLButtonElement>(".nav-mobile-toggle")!;
+  const accountMenu = header.querySelector<HTMLDetailsElement>(".account-menu");
+  let loadingAccount = false;
+  accountMenu?.addEventListener(
+    "toggle",
+    async () => {
+      if (!accountMenu.open || loadingAccount) return;
+      loadingAccount = true;
+      try {
+        const me = await api("/api/account/me");
+        if (signal.aborted) return;
+        const email = header.querySelector<HTMLElement>(
+          "[data-account-email]",
+        )!;
+        email.hidden = !me.authenticated;
+        email.textContent = me.email ?? "";
+        header.querySelector<HTMLElement>("[data-account-login]")!.hidden =
+          !!me.authenticated;
+        header.querySelector<HTMLElement>("[data-account-logout]")!.hidden =
+          !me.authenticated;
+      } catch {
+        /* Login link remains usable when the account service is unavailable. */
+      } finally {
+        loadingAccount = false;
+      }
+    },
+    { signal },
+  );
+  header.querySelector("[data-account-logout]")?.addEventListener(
+    "click",
+    async () => {
+      if (
+        !(await confirmAction(
+          "ออกจากระบบ?",
+          "กรุณาบันทึกแม่แบบและดาวน์โหลดเอกสารก่อนออกจากระบบ",
+        ))
+      )
+        return;
+      try {
+        await post("/api/account/logout");
+        leaveAfterConfirmation("/account/login");
+      } catch {
+        header.querySelector<HTMLElement>(
+          "[data-account-status]",
+        )!.textContent = "ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง";
+      }
+    },
+    { signal },
+  );
   let timer: ReturnType<typeof setTimeout> | undefined;
   const cancel = () => clearTimeout(timer);
   const close = () => {
@@ -35,6 +85,7 @@ export function init(header: HTMLElement) {
     summary.addEventListener(
       "pointerenter",
       (e) => {
+        if (menu === accountMenu) return;
         if (
           e.pointerType !== "mouse" ||
           !matchMedia("(min-width: 1001px)").matches

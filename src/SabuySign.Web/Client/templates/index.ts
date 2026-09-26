@@ -3,6 +3,7 @@ import { account } from "./accounts";
 import { workbench } from "./workbench";
 import { validatePdf } from "../editor/pdf";
 import { unlockPdf } from "../editor/password";
+import { PdfView } from "./pdf-view";
 import type { Template } from "./model";
 const sessions = new WeakMap<HTMLElement, AbortController>();
 export function dispose(root: HTMLElement) {
@@ -33,28 +34,6 @@ export async function init(root: HTMLElement) {
     }
     const bar = document.createElement("div");
     bar.className = "workspace-user";
-    bar.innerHTML = `<span>${escape(me.email)}</span>`;
-    bar.append(
-      button("ออกจากระบบ", async () => {
-        if (
-          await confirmAction(
-            "ออกจากระบบ?",
-            "กรุณาบันทึกแม่แบบและดาวน์โหลดเอกสารก่อนออกจากระบบ",
-          )
-        ) {
-          try {
-            await post("/api/account/logout");
-            life.abort();
-            location.assign("/account/login");
-          } catch (error) {
-            const message = document.createElement("p");
-            message.setAttribute("role", "status");
-            message.textContent = (error as Error).message;
-            bar.append(message);
-          }
-        }
-      }),
-    );
     if (me.verified && me.googleEnabled && !me.googleLinked) {
       const form = document.createElement("form");
       form.method = "POST";
@@ -71,7 +50,7 @@ export async function init(root: HTMLElement) {
       form.append(hidden, connect);
       bar.append(form);
     }
-    root.before(bar);
+    if (bar.childElementCount) root.before(bar);
     signal.addEventListener("abort", () => bar.remove(), { once: true });
     if (!me.verified) {
       root.innerHTML =
@@ -112,14 +91,45 @@ async function listing(root: HTMLElement, signal: AbortSignal) {
     '<header class="workspace-heading"><div><span class="workspace-eyebrow">พื้นที่ของฉัน</span><h1>แม่แบบเอกสาร</h1><p>เตรียมครั้งเดียว กรอกข้อมูลแล้วใช้ซ้ำได้</p></div><a class="button button-blue" href="/workspace/templates/new">＋ สร้างแม่แบบ</a></header><label class="template-search">ค้นหาแม่แบบ<input type="search" placeholder="ชื่อแม่แบบ" data-search></label><p data-message role="status"></p><div class="template-list"></div>';
   const grid = root.querySelector<HTMLElement>(".template-list")!;
   const message = root.querySelector("[data-message]")!;
+  let thumbnails = Promise.resolve();
+  const observer = new IntersectionObserver((items) => {
+    for (const item of items) {
+      if (!item.isIntersecting) continue;
+      observer.unobserve(item.target);
+      const card = item.target as HTMLElement;
+      thumbnails = thumbnails.then(async () => {
+        if (signal.aborted || !card.isConnected) return;
+        const view = new PdfView();
+        try {
+          const bytes = await api<Uint8Array>(
+            `/api/templates/${card.dataset.id}/file`,
+          );
+          if (signal.aborted || !card.isConnected) return;
+          await view.load(bytes);
+          bytes.fill(0);
+          const canvas = document.createElement("canvas");
+          canvas.setAttribute("aria-label", "ตัวอย่างหน้าแรก");
+          const frame = card.querySelector(".template-card-icon")!;
+          frame.replaceChildren(canvas);
+          await view.draw(canvas, 0, 170);
+        } catch {
+          /* Keep the document icon if a thumbnail cannot be loaded. */
+        } finally {
+          await view.destroy();
+        }
+      });
+    }
+  });
+  signal.addEventListener("abort", () => observer.disconnect(), { once: true });
   const render = (query = "") => {
+    observer.disconnect();
     grid.replaceChildren();
     for (const t of entries.filter((t) =>
       t.name.toLowerCase().includes(query.toLowerCase()),
     )) {
       const card = document.createElement("article");
       card.className = "template-card";
-      card.innerHTML = `<div class="template-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"/></svg></div><h2>${escape(t.name)}</h2><p class="muted">ฉบับที่ ${t.version}</p><a class="button button-blue" href="/workspace/templates/${t.id}/fill">กรอกข้อมูล</a><div class="template-card-actions"><a href="/workspace/templates/${t.id}/edit">แก้ไข</a></div>`;
+      card.innerHTML = `<div class="template-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"/></svg></div><h2>${escape(t.name)}</h2><p class="muted">ฉบับที่ ${t.version}</p><a class="button button-blue" href="/workspace/templates/${t.id}/fill">กรอกข้อมูล</a><details class="template-card-menu"><summary aria-label="จัดการแม่แบบ">⋯</summary><div class="template-card-actions"><a href="/workspace/templates/${t.id}/edit">แก้ไข</a></div></details>`;
       const actions = card.querySelector(".template-card-actions")!;
       actions.append(
         button("ทำสำเนา", async () => {
@@ -151,7 +161,9 @@ async function listing(root: HTMLElement, signal: AbortSignal) {
           }
         }),
       );
+      card.dataset.id = t.id;
       grid.append(card);
+      observer.observe(card);
     }
     if (!grid.children.length)
       grid.innerHTML = `<section class="workspace-empty"><h2>${entries.length ? "ไม่พบแม่แบบที่ค้นหา" : "สร้างแม่แบบแรกของคุณ"}</h2><p>${entries.length ? "ลองค้นหาด้วยชื่ออื่น" : "เริ่มจาก PDF ที่ใช้บ่อย เช่น สัญญาจ้างหรือหนังสือรับรอง"}</p>${entries.length ? "" : '<a class="button button-blue" href="/workspace/templates/new">สร้างแม่แบบ</a>'}</section>`;

@@ -27,9 +27,18 @@
                     <ToolMenuGroup Title="แก้ไขและเซ็น" Category="edit" Items='InCategory("edit")' />
                 </div>
             </details>
-            <a class="primary-nav-link" href="/templates">แม่แบบเอกสาร</a>
-            <a class="primary-nav-link" href="/workspace/templates">พื้นที่ของฉัน</a>
         </nav>
+        <details class="nav-disclosure account-menu">
+            <summary aria-label="บัญชีของฉัน" title="บัญชีของฉัน"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg></summary>
+            <div class="account-menu-panel">
+                <p data-account-email hidden></p>
+                <a href="/workspace/templates">แม่แบบของฉัน</a>
+                <a href="/templates">รู้จักแม่แบบเอกสาร</a>
+                <a href="/account/login" data-account-login>เข้าสู่ระบบ</a>
+                <button type="button" data-account-logout hidden>ออกจากระบบ</button>
+                <p data-account-status role="status"></p>
+            </div>
+        </details>
     </div>
 </header>
 @code {

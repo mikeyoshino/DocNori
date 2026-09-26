@@ -428,6 +428,7 @@ test("workspace uploads a real multipart PDF, opens its designer, duplicates and
   await expect(page.locator("[data-fields]")).toContainText("เพิ่มช่องข้อมูล");
   await page.getByRole("link", { name: "แม่แบบของฉัน" }).click();
   await expect(page.locator(".template-card")).toHaveCount(1);
+  await page.locator(".template-card").getByLabel("จัดการแม่แบบ").click();
   await page.getByRole("button", { name: "ทำสำเนา", exact: true }).click();
   await expect(page.locator(".template-card")).toHaveCount(2);
   const copyCard = page.locator(".template-card").filter({
@@ -436,6 +437,12 @@ test("workspace uploads a real multipart PDF, opens its designer, duplicates and
       exact: true,
     }),
   });
+  if (
+    !(await copyCard
+      .locator("details")
+      .evaluate((e) => (e as HTMLDetailsElement).open))
+  )
+    await copyCard.getByLabel("จัดการแม่แบบ").click();
   await copyCard.getByRole("button", { name: "ลบ", exact: true }).click();
   const dialog = page.getByRole("dialog", {
     name: "ลบแม่แบบนี้?",
@@ -445,6 +452,12 @@ test("workspace uploads a real multipart PDF, opens its designer, duplicates and
   await dialog.getByRole("button", { name: "ยกเลิก", exact: true }).click();
   expect(mutations.filter((m) => m.startsWith("DELETE"))).toEqual([]);
   await expect(page.locator(".template-card")).toHaveCount(2);
+  if (
+    !(await copyCard
+      .locator("details")
+      .evaluate((e) => (e as HTMLDetailsElement).open))
+  )
+    await copyCard.getByLabel("จัดการแม่แบบ").click();
   await copyCard.getByRole("button", { name: "ลบ", exact: true }).click();
   await dialog.getByRole("button", { name: "ยืนยัน", exact: true }).click();
   await expect(page.locator(".template-card")).toHaveCount(1);
@@ -529,4 +542,200 @@ test("unconfigured account and email registration show availability without offe
     "การสมัครและกู้คืนด้วยอีเมลยังไม่เปิดใช้งาน",
   );
   await expect(page.locator(".account-card form")).toHaveCount(0);
+});
+
+test("designer previews real sample text without saving it as a default", async ({
+  page,
+}) => {
+  const mock = await mockWorkspace(page, template());
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page
+    .locator("[data-fields]")
+    .getByRole("button", { name: "ชื่อบริษัท", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }),
+  ).toHaveValue("16");
+  await page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }).fill("18");
+  await page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }).blur();
+  await page.getByLabel("ข้อความทดลอง", { exact: true }).fill("น้ำ กุ้ง ปู่");
+  await page.getByRole("button", { name: "ดูตัวอย่าง", exact: true }).click();
+  await expect(page.locator("[data-status]")).toContainText("ตัวอย่าง PDF");
+  await expect(page.locator("[data-overlay]")).toBeHidden();
+  await page.getByRole("button", { name: "ขยายเอกสาร", exact: true }).click();
+  await expect(
+    page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }),
+  ).toHaveValue("18");
+  await page.getByRole("button", { name: "พอดีหน้า", exact: true }).click();
+  await page.screenshot({
+    path: "artifacts/templates-design-preview.png",
+    fullPage: true,
+  });
+  const preview = await page
+    .locator(".template-paper canvas")
+    .evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  await page
+    .getByRole("button", { name: "กลับไปจัดช่อง", exact: true })
+    .click();
+  await page.getByRole("button", { name: "บันทึกแม่แบบ", exact: true }).click();
+  await expect(page.locator("[data-status]")).toContainText("บันทึกแม่แบบแล้ว");
+  expect(mock.current().definition.fields[0].defaultValue).toBe(
+    "บริษัท ตัวอย่าง",
+  );
+  expect(mock.writes[0].body).not.toContain("น้ำ กุ้ง ปู่");
+  await page.getByRole("link", { name: "กรอกข้อมูล", exact: true }).click();
+  await page.getByLabel("ชื่อบริษัท", { exact: true }).fill("น้ำ กุ้ง ปู่");
+  await expect(
+    page.getByRole("button", { name: "ดาวน์โหลด PDF", exact: true }),
+  ).toBeEnabled();
+  expect(
+    (await page
+      .locator(".template-paper canvas")
+      .evaluate((c) => (c as HTMLCanvasElement).toDataURL())) === preview,
+  ).toBe(true);
+  const received = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "ดาวน์โหลด PDF", exact: true })
+    .click();
+  const bytes = await readFile((await (await received).path())!);
+  const pdf = getDocument({
+    data: new Uint8Array(bytes),
+    useSystemFonts: true,
+  });
+  try {
+    const content = await (
+      await (await pdf.promise).getPage(1)
+    ).getTextContent();
+    const added = content.items.filter(
+      (item) => "str" in item && /[ก-๙]/.test(item.str),
+    );
+    expect(added.length).toBeGreaterThan(0);
+    for (const item of added)
+      if ("height" in item) expect(item.height).toBeCloseTo(18, 1);
+    const first = added[0];
+    if ("transform" in first) expect(first.transform[4]).toBeCloseTo(40, 1);
+  } finally {
+    await pdf.destroy();
+  }
+});
+
+test("account menu is separate from tools and compact workspace fits mobile", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  await page.goto("/workspace/templates");
+  await expect(
+    page.locator("#primary-tool-nav a[href='/workspace/templates']"),
+  ).toHaveCount(0);
+  await expect(page.locator(".template-card canvas")).toBeVisible();
+  await page.screenshot({
+    path: "artifacts/templates-library-desktop.png",
+    fullPage: true,
+  });
+  await page.getByLabel("บัญชีของฉัน", { exact: true }).click();
+  await expect(
+    page
+      .locator(".account-menu")
+      .getByRole("link", { name: "แม่แบบของฉัน", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".account-menu")).not.toHaveAttribute("open", "");
+  expect(
+    (await page.locator(".document-workspace").boundingBox())!.width,
+  ).toBeLessThanOrEqual(1184);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByLabel("บัญชีของฉัน", { exact: true }).click();
+  await expect(
+    page
+      .locator(".account-menu")
+      .getByRole("link", { name: "แม่แบบของฉัน", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+});
+
+test("designer reports sample overflow and preserves real font size", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page
+    .locator("[data-fields]")
+    .getByRole("button", { name: "ชื่อบริษัท", exact: true })
+    .click();
+  const sample = page.getByLabel("ข้อความทดลอง", { exact: true });
+  await sample.fill("ข้อความยาวเกินช่อง".repeat(20));
+  await page.getByRole("button", { name: "ดูตัวอย่าง", exact: true }).click();
+  await expect(page.locator("[data-status]")).toContainText(
+    "ข้อความยาวเกินช่อง",
+  );
+  await expect(page.locator(".template-box.is-overflow")).toHaveCount(1);
+  await expect(
+    page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }),
+  ).toHaveValue("16");
+  await sample.fill("สมชาย");
+  await expect(page.locator("[data-status]")).toContainText("ตัวอย่าง PDF");
+  await expect(page.locator("[data-overlay]")).toBeHidden();
+});
+
+test("confirmed logout leaves dirty workspace without a second browser prompt", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  let loggedOut = false;
+  await page.route("**/api/account/logout", async (route) => {
+    loggedOut = true;
+    await route.fulfill({ json: { success: true } });
+  });
+  await page.route("**/api/account/me", (route) =>
+    route.fulfill({
+      json: {
+        available: true,
+        authenticated: !loggedOut,
+        verified: !loggedOut,
+        email: "owner@example.test",
+        googleEnabled: false,
+      },
+    }),
+  );
+  const prompts: string[] = [];
+  page.on("dialog", async (dialog) => {
+    prompts.push(dialog.type());
+    await dialog.dismiss();
+  });
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page.getByLabel("ชื่อแม่แบบ", { exact: true }).fill("ยังไม่บันทึก");
+  await page.getByLabel("บัญชีของฉัน", { exact: true }).click();
+  await page.getByRole("button", { name: "ออกจากระบบ", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "ยกเลิก", exact: true })
+    .click();
+  expect(loggedOut).toBe(false);
+  await page.getByLabel("บัญชีของฉัน", { exact: true }).click();
+  await page.getByRole("button", { name: "ออกจากระบบ", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "ยืนยัน", exact: true })
+    .click();
+  await expect(page).toHaveURL("/account/login");
+  expect(prompts).toEqual([]);
+});
+
+test("adding a field from preview returns to design and places the new field", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page.getByRole("button", { name: "ดูตัวอย่าง", exact: true }).click();
+  await expect(page.locator("[data-overlay]")).toBeHidden();
+  await page
+    .getByRole("button", { name: "＋ เพิ่มช่องข้อมูล", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "ดูตัวอย่าง", exact: true }),
+  ).toBeVisible();
+  await page.locator("[data-overlay]").click({ position: { x: 90, y: 180 } });
+  await expect(page.locator(".template-box")).toHaveCount(2);
 });

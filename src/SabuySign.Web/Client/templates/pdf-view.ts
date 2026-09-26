@@ -39,7 +39,13 @@ export class PdfView {
     this.doc = doc;
     return this.doc;
   }
-  async draw(canvas: HTMLCanvasElement, page: number, maxWidth: number) {
+  async draw(
+    canvas: HTMLCanvasElement,
+    page: number,
+    maxWidth: number,
+    zoom = 1,
+    maxHeight = Infinity,
+  ) {
     const generation = ++this.generation;
     this.render?.cancel();
     const doc = this.doc;
@@ -47,7 +53,11 @@ export class PdfView {
     const p = await doc.getPage(page + 1);
     if (generation !== this.generation) return;
     const unit = p.getViewport({ scale: 1 });
-    const scale = Math.min(1.2, Math.max(0.2, maxWidth / unit.width));
+    const scale =
+      Math.min(
+        1.2,
+        Math.max(0.2, Math.min(maxWidth / unit.width, maxHeight / unit.height)),
+      ) * zoom;
     const ratio = Math.min(devicePixelRatio, 2);
     const viewport = p.getViewport({ scale: scale * ratio });
     canvas.width = Math.ceil(viewport.width);

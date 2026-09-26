@@ -36,11 +36,14 @@ export async function workbench(
     armed: string | undefined,
     dirty = false,
     downloaded = false,
+    previewing = false,
+    zoom = 1,
     values = defaults(data.definition),
     worker: Worker | undefined,
     output: Uint8Array | undefined,
     requestId = 0,
     timer: ReturnType<typeof setTimeout> | undefined;
+  const samples: Record<string, string> = Object.create(null);
   const menus: { dispose(): void }[] = [];
   window.addEventListener(
     "keydown",
@@ -53,6 +56,14 @@ export async function workbench(
     { signal },
   );
   root.innerHTML = `<header class="workspace-heading"><div><a class="workspace-back" href="/workspace/templates">← แม่แบบของฉัน</a><h1>${escape(data.name)}</h1><p>${editing ? "วางช่องบนเอกสาร แล้วตั้งค่าทางขวา" : "กรอกข้อมูลแล้วดูตัวอย่างก่อนดาวน์โหลด"}</p></div><div data-actions></div></header><p data-status role="status" class="workspace-status"></p><div class="template-workbench ${editing ? "is-design" : "is-fill"}"><aside class="template-fields"><h2>${editing ? "ช่องข้อมูล" : "ข้อมูลเอกสาร"}</h2><div data-fields></div></aside><section class="template-stage"><div class="template-pagebar"><button type="button" data-prev aria-label="หน้าก่อน">←</button><span data-page></span><button type="button" data-next aria-label="หน้าถัดไป">→</button></div><div class="template-scroll"><div class="template-paper"><canvas data-canvas></canvas><div data-overlay></div></div></div><p class="muted">${editing ? "เลือกเพิ่มช่อง แล้วคลิกตำแหน่งบนเอกสาร" : "ข้อมูลที่กรอกและ PDF ผลลัพธ์ไม่ถูกเก็บในบัญชี"}</p></section>${editing ? '<aside class="template-inspector"><h2>ตั้งค่าช่อง</h2><div data-inspector></div></aside>' : ""}</div>`;
+  root.classList.add("has-workbench");
+  const bench = root.querySelector(".template-workbench")!;
+  const sidebar = document.createElement("div");
+  sidebar.className = "template-sidebar";
+  sidebar.append(root.querySelector(".template-fields")!);
+  const inspector = root.querySelector(".template-inspector");
+  if (inspector) sidebar.append(inspector);
+  bench.append(sidebar);
   const get = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
   const status = get("[data-status]");
   const canvas = get<HTMLCanvasElement>("[data-canvas]");
@@ -157,6 +168,65 @@ export async function workbench(
     "button button-blue",
   );
   actionPanel.append(primary);
+  let previewButton: HTMLButtonElement | undefined;
+  if (editing) {
+    previewButton = button(
+      "ดูตัวอย่าง",
+      async () => {
+        previewing = !previewing;
+        armed = undefined;
+        previewButton!.textContent = previewing
+          ? "กลับไปจัดช่อง"
+          : "ดูตัวอย่าง";
+        previewButton!.setAttribute("aria-pressed", String(previewing));
+        get(".template-workbench").classList.toggle(
+          "is-previewing",
+          previewing,
+        );
+        overlay.hidden = previewing;
+        if (previewing) await refresh();
+        else {
+          requestId++;
+          worker?.terminate();
+          output = undefined;
+          await draw();
+          note("เลือกช่องบนเอกสารเพื่อตั้งค่า");
+        }
+      },
+      "button button-quiet",
+    );
+    previewButton.setAttribute("aria-pressed", "false");
+    actionPanel.prepend(previewButton);
+  }
+  function returnToDesign() {
+    if (!previewing) return;
+    previewing = false;
+    requestId++;
+    worker?.terminate();
+    clearTimeout(timer);
+    output = undefined;
+    previewButton!.textContent = "ดูตัวอย่าง";
+    previewButton!.setAttribute("aria-pressed", "false");
+    get(".template-workbench").classList.remove("is-previewing");
+    overlay.hidden = false;
+    void draw();
+  }
+  const pagebar = get(".template-pagebar");
+  const zoomLabel = document.createElement("span");
+  zoomLabel.className = "template-zoom-label";
+  const setZoom = (value: number) => {
+    zoom = Math.max(0.5, Math.min(2, value));
+    zoomLabel.textContent = Math.round(zoom * 100) + "%";
+    void draw();
+  };
+  const zoomOut = button("−", () => setZoom(zoom - 0.25));
+  zoomOut.setAttribute("aria-label", "ย่อเอกสาร");
+  const zoomIn = button("+", () => setZoom(zoom + 0.25));
+  zoomIn.setAttribute("aria-label", "ขยายเอกสาร");
+  const fit = button("พอดีหน้า", () => setZoom(1));
+  pagebar.append(zoomOut, zoomLabel, zoomIn, fit);
+  zoomLabel.textContent = "100%";
+
   if (editing)
     actionPanel.append(
       Object.assign(document.createElement("a"), {
@@ -197,6 +267,13 @@ export async function workbench(
     dirty = true;
     note("มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก");
     renderBoxes();
+    if (previewing) {
+      requestId++;
+      worker?.terminate();
+      output = undefined;
+      clearTimeout(timer);
+      timer = setTimeout(() => void refresh(), 350);
+    }
   }
   let paintChain: Promise<void> = Promise.resolve();
   function draw() {
@@ -205,11 +282,14 @@ export async function workbench(
   }
   async function paint() {
     if (signal.aborted) return;
-    const view = !editing && output && result.doc ? result : original;
+    const view =
+      (!editing || previewing) && output && result.doc ? result : original;
     const rendered = await view.draw(
       canvas,
       page,
-      Math.max(250, stage.clientWidth - 40),
+      Math.max(220, stage.clientWidth - 32),
+      zoom,
+      Math.max(250, stage.clientHeight - 32),
     );
     if (!rendered) return;
     ({ scale, width: pageWidth, height: pageHeight } = rendered);
@@ -221,18 +301,26 @@ export async function workbench(
     renderBoxes();
   }
   function renderBoxes() {
+    overlay.hidden = previewing && !!output;
     overlay.replaceChildren();
-    const l = layout(data.definition, values, measure);
+    const l = layout(
+      data.definition,
+      editing ? sampleValues() : values,
+      measure,
+    );
     for (const p of data.definition.placements.filter((p) => p.page === page)) {
       const f = data.definition.fields.find((f) => f.id === p.fieldId)!;
       const box = document.createElement("div");
-      box.className = `template-box ${selected === p.id ? "is-selected" : ""} ${l.invalid.has(p.id) && !editing ? "is-overflow" : ""}`;
+      box.className = `template-box ${selected === p.id ? "is-selected" : ""} ${l.invalid.has(p.id) && (!editing || previewing) ? "is-overflow" : ""}`;
       box.style.cssText = `left:${p.x * scale}px;top:${p.y * scale}px;width:${p.width * scale}px;height:${p.height * scale}px;font-size:${p.size * scale}px;text-align:${p.align};color:${p.color}`;
       if (editing) {
         box.tabIndex = 0;
         box.setAttribute("role", "button");
         box.setAttribute("aria-label", f.label);
-        box.textContent = f.label;
+        const label = document.createElement("span");
+        label.className = "template-box-label";
+        label.textContent = f.label;
+        box.append(label);
         box.onclick = (e) => {
           e.stopPropagation();
           selected = p.id;
@@ -341,6 +429,44 @@ export async function workbench(
       });
       return i;
     };
+    const fontName = document.createElement("p");
+    fontName.className = "template-font-name";
+    fontName.textContent = "Sarabun · ขนาดจริงใน PDF";
+    area.append(fontName);
+    const sizeLabel = document.createElement("label");
+    sizeLabel.textContent = "ขนาดตัวอักษร (pt)";
+    const sizeInput = document.createElement("input");
+    sizeInput.type = "number";
+    sizeInput.min = "8";
+    sizeInput.max = "72";
+    sizeInput.value = String(p.size);
+    sizeLabel.append(sizeInput);
+    area.append(sizeLabel);
+    sizeInput.onchange = () => {
+      p.size = Math.max(8, Math.min(72, Number(sizeInput.value) || 16));
+      sizeInput.value = String(p.size);
+      changed();
+    };
+    const trialLabel = document.createElement("label");
+    trialLabel.textContent = "ข้อความทดลอง";
+    const trial = document.createElement("textarea");
+    trial.value = sampleValues()[f.id];
+    trial.maxLength = 10000;
+    trial.rows = 2;
+    trialLabel.append(trial);
+    area.append(trialLabel);
+    const hint = document.createElement("small");
+    hint.className = "muted";
+    hint.textContent = "ใช้ดูตัวอย่างเท่านั้น ไม่บันทึกเป็นค่าเริ่มต้น";
+    area.append(hint);
+    trial.oninput = () => {
+      samples[f.id] = trial.value;
+      requestId++;
+      worker?.terminate();
+      output = undefined;
+      clearTimeout(timer);
+      if (previewing) timer = setTimeout(() => void refresh(), 350);
+    };
     input("ชื่อช่อง", f.label, "text", (s) => (f.label = s)).maxLength = 100;
     dropdown(
       area,
@@ -383,8 +509,11 @@ export async function workbench(
     };
     check("จำเป็นต้องกรอก", f.required, (v) => (f.required = v));
     check("อนุญาตหลายบรรทัด", p.multiline, (v) => (p.multiline = v));
+    const geometry = document.createElement("details");
+    geometry.className = "template-geometry";
+    geometry.innerHTML = "<summary>ขนาดและตำแหน่งช่อง</summary>";
+    area.append(geometry);
     for (const [key, label, min, max] of [
-      ["size", "ขนาดตัวอักษร", 8, 72],
       ["width", "ความกว้างช่อง", 20, pageWidth - p.x],
       ["height", "ความสูงช่อง", 16, pageHeight - p.y],
       ["x", "ตำแหน่งแนวนอน", 0, pageWidth - p.width],
@@ -403,6 +532,7 @@ export async function workbench(
                   : max;
         p[key] = Math.max(min, Math.min(upper, Number(s) || min));
       });
+      geometry.append(i.parentElement!);
       i.min = String(min);
       i.max = String(max);
     }
@@ -424,6 +554,7 @@ export async function workbench(
     input("สีตัวอักษร", p.color, "color", (s) => (p.color = s));
     area.append(
       button("วางข้อมูลนี้อีกตำแหน่ง", () => {
+        returnToDesign();
         armed = f.id;
         note("คลิกตำแหน่งใหม่บนเอกสารเพื่อใช้ข้อมูลเดิม");
       }),
@@ -449,6 +580,7 @@ export async function workbench(
         button(
           "＋ เพิ่มช่องข้อมูล",
           () => {
+            returnToDesign();
             armed = "new";
             note("คลิกตำแหน่งบนเอกสารเพื่อเพิ่มช่อง");
           },
@@ -523,12 +655,31 @@ export async function workbench(
     clearTimeout(timer);
     timer = setTimeout(() => void refresh(), 350);
   }
+  function sampleValues() {
+    return Object.fromEntries(
+      data.definition.fields.map((f) => [
+        f.id,
+        Object.hasOwn(samples, f.id)
+          ? samples[f.id]
+          : f.defaultValue ||
+            (f.type === "number"
+              ? "15000"
+              : f.type === "date"
+                ? "2026-01-01"
+                : "ข้อความตัวอย่าง"),
+      ]),
+    );
+  }
   async function refresh() {
-    if (editing) return;
+    if (editing && !previewing) return;
     const generation = ++requestId;
     worker?.terminate();
     output = undefined;
-    const l = layout(data.definition, values, measure);
+    const l = layout(
+      data.definition,
+      editing ? sampleValues() : values,
+      measure,
+    );
     for (const el of fieldPanel.querySelectorAll<HTMLElement>("[data-error]")) {
       const fieldId = el.dataset.error!;
       const overflowPages = [
@@ -544,11 +695,25 @@ export async function workbench(
       const input = el.parentElement!.querySelector("input,textarea")!;
       input.setAttribute("aria-invalid", String(!!el.textContent));
     }
-    primary.disabled = true;
+    if (!editing) primary.disabled = true;
     renderBoxes();
     if (Object.keys(l.errors).length || !data.definition.fields.length) {
       await draw();
-      note("กรอกข้อมูลให้ครบและแก้ช่องที่แจ้งเตือนก่อนดาวน์โหลด");
+      const messages = [
+        ...new Set(
+          Object.entries(l.errors).map(
+            ([id, error]) =>
+              (data.definition.fields.find((f) => f.id === id)?.label ?? "") +
+              ": " +
+              error,
+          ),
+        ),
+      ];
+      note(
+        editing
+          ? "ตรวจข้อความทดลอง — " + messages.join(" · ")
+          : "กรอกข้อมูลให้ครบและแก้ช่องที่แจ้งเตือนก่อนดาวน์โหลด",
+      );
       return;
     }
     note("กำลังสร้างตัวอย่าง…");
@@ -573,8 +738,12 @@ export async function workbench(
         await draw();
         if (generation !== requestId || signal.aborted) return;
         renderBoxes();
-        primary.disabled = false;
-        note("ตรวจเอกสารแล้วดาวน์โหลดได้เลย");
+        if (!editing) primary.disabled = false;
+        note(
+          editing
+            ? "ตัวอย่าง PDF · ตำแหน่งและฟอนต์แบบเดียวกับไฟล์ดาวน์โหลด"
+            : "ตรวจเอกสารแล้วดาวน์โหลดได้เลย",
+        );
       } catch (e) {
         if (generation === requestId && !signal.aborted) report(e);
       }
@@ -594,7 +763,7 @@ export async function workbench(
   overlay.addEventListener(
     "click",
     (e) => {
-      if (!editing || !armed) return;
+      if (!editing || previewing || !armed) return;
       if (
         data.definition.placements.length >= limits.maxPlacements ||
         (armed === "new" && data.definition.fields.length >= limits.maxFields)
@@ -675,6 +844,8 @@ export async function workbench(
       font.fill(0);
       output?.fill(0);
       values = {};
+      for (const key of Object.keys(samples)) delete samples[key];
+      root.classList.remove("has-workbench");
     },
     { once: true },
   );

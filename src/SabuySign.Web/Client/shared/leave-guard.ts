@@ -1,3 +1,8 @@
+/** Use only after the user has explicitly confirmed leaving (for example logout). */
+export function leaveAfterConfirmation(url: string) {
+  window.dispatchEvent(new Event("docnori:departure-approved"));
+  location.assign(url);
+}
 /** Shared in-app departure guard. Reload/closing remains browser protected. */
 export function guardUnsavedWork(
   hasWork: () => boolean,
@@ -11,6 +16,13 @@ export function guardUnsavedWork(
     approved = false;
   };
   window.addEventListener("pageshow", reset, { signal });
+  window.addEventListener(
+    "docnori:departure-approved",
+    () => {
+      approved = true;
+    },
+    { signal },
+  );
   window.addEventListener(
     "beforeunload",
     (e) => {
