@@ -61,7 +61,7 @@ public static class TemplateEndpoints
         });
         static string Owner(HttpContext c) => c.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         group.MapGet("/limits", (TemplateLimits limits) => Results.Ok(limits));
-        group.MapGet("/", async (HttpContext c) => Results.Ok(await runtime.Store!.List(Owner(c), c.RequestAborted)));
+        group.MapGet("/", async Task<IResult> (HttpContext c) => Results.Ok(await runtime.Store!.List(Owner(c), c.RequestAborted)));
         group.MapGet("/{id:guid}", async (Guid id, HttpContext c) => Results.Ok(await runtime.Store!.Get(Owner(c), id, c.RequestAborted)));
         group.MapGet("/{id:guid}/file", async (Guid id, HttpContext c) =>
         {

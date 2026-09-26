@@ -91,6 +91,23 @@ public class TemplateEndpointTests
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await h.Client.GetAsync("/api/templates")).StatusCode);
     }
     [DatabaseFact]
+    public async Task VerifiedWorkspaceReceivesJsonForEmptyAndPopulatedLists()
+    {
+        await using var h = new Harness(); await h.Start(); h.Identify();
+        var empty = await h.Client.GetAsync("/api/templates");
+        Assert.Equal(HttpStatusCode.OK, empty.StatusCode);
+        Assert.Equal("application/json", empty.Content.Headers.ContentType?.MediaType);
+        Assert.Empty((await empty.Content.ReadFromJsonAsync<TemplateSummary[]>())!);
+        await h.Csrf();
+        var uploaded = await h.Upload();
+        Assert.Equal(HttpStatusCode.Created, uploaded.StatusCode);
+        var detail = (await uploaded.Content.ReadFromJsonAsync<TemplateDetail>())!;
+        var list = (await h.Client.GetFromJsonAsync<TemplateSummary[]>("/api/templates"))!;
+        Assert.Equal(detail.Id, Assert.Single(list).Id);
+        var saved = (await h.Client.GetFromJsonAsync<TemplateDetail>($"/api/templates/{detail.Id}"))!;
+        Assert.Equal(detail.Id, saved.Id);
+    }
+    [DatabaseFact]
     public async Task HttpRequiresVerifiedOwnerAndCsrfOnEveryMutation()
     {
         await using var h = new Harness(); await h.Start();
