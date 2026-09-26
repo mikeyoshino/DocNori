@@ -10,7 +10,7 @@
         <div class="tool-file-drop" data-drop>
             <Icon Name="upload" /><h2>เลือก PDF ที่ต้องการแยก</h2>
             <p>ลากไฟล์มาวางที่นี่ หรือเลือกจากเครื่องของคุณ</p>
-            <button data-choose class="button button-blue" disabled="@(!Ready)">เลือกไฟล์ PDF <Icon Name="arrow" /></button>
+            <FileSelectButton Ready="Ready" Label="เลือกไฟล์ PDF" data-choose="" />
             <span class="file-limits">1 ไฟล์ · ไม่เกิน 25 MB / 100 หน้า</span>
         </div>
         <p class="tool-local-note"><Icon Name="lock" /> ประมวลผลบนเครื่องคุณ · ไม่อัปโหลดเอกสาร</p>

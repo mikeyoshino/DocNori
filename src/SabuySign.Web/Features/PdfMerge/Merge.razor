@@ -9,7 +9,7 @@
         <h1>รวมไฟล์ PDF</h1><p>เลือกเอกสาร จัดลำดับไฟล์ แล้วดาวน์โหลดเป็น PDF เดียว</p>
         <div class="tool-file-drop" data-drop>
             <Icon Name="upload" /><h2>เลือก PDF ที่ต้องการรวม</h2><p>ลากหลายไฟล์มาวางที่นี่ หรือเลือกจากเครื่องของคุณ</p>
-            <button data-choose class="button button-blue" disabled="@(!Ready)">เลือกไฟล์ PDF <Icon Name="arrow" /></button>
+            <FileSelectButton Ready="Ready" Label="เลือกไฟล์ PDF" data-choose="" />
             <span class="file-limits">2–20 ไฟล์ · ขนาดรวมไม่เกิน 25 MB · รวมไม่เกิน 100 หน้า</span>
         </div>
         <p class="tool-local-note"><Icon Name="lock" /> ทำบนเครื่องคุณ · ไม่ส่งไฟล์ให้เรา · ดาวน์โหลดก่อนปิดหน้า</p>

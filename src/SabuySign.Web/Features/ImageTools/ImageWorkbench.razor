@@ -9,7 +9,7 @@
     <section data-intro class="tool-start tool-start-intro">
         <span class="tool-card-icon"><ToolArtwork Name="@Artwork" /></span><h1>@Title</h1>
         <p>@(IsPdf ? "รวมรูปเอกสารหลายรูป เป็น PDF ไฟล์เดียว" : "เปลี่ยนรูปจาก iPhone ให้เปิดและส่งต่อได้ง่าย")</p>
-        <div data-drop class="tool-file-drop"><Icon Name="upload" /><button data-choose class="button button-blue" disabled="@(!Ready)">@(IsPdf ? "เลือกรูปภาพ" : "เลือกไฟล์ HEIC") <Icon Name="arrow" /></button><p>หรือลากไฟล์มาวางที่นี่</p><span class="file-limits">สูงสุด 20 ไฟล์ · ไฟล์ละ 20 MB · รวมไม่เกิน 100 MB</span></div>
+        <div data-drop class="tool-file-drop"><Icon Name="upload" /><FileSelectButton Ready="Ready" Label='@(IsPdf ? "เลือกรูปภาพ" : "เลือกไฟล์ HEIC")' data-choose="" /><p>หรือลากไฟล์มาวางที่นี่</p><span class="file-limits">สูงสุด 20 ไฟล์ · ไฟล์ละ 20 MB · รวมไม่เกิน 100 MB</span></div>
         <p class="tool-local-note"><Icon Name="lock" /> รูปอยู่บนเครื่องคุณ · ไม่ส่งไฟล์ขึ้นเซิร์ฟเวอร์</p>
         <p data-reading role="status" hidden>กำลังเตรียมรูปภาพ…</p>
         <div class="gif-seo"><section><h2>@Title ออนไลน์ ไม่ต้องติดตั้งโปรแกรม</h2><p>@(IsPdf ? "แปลง JPG และ PNG เป็น PDF ฟรี เหมาะสำหรับรูปเอกสาร ใบเสร็จ หรือรูปถ่ายหลายหน้า จัดลำดับ หมุนรูป เลือกขนาดกระดาษและขอบ แล้วดูตัวอย่างก่อนดาวน์โหลด" : "แปลง HEIC และ HEIF เป็น JPG ฟรี เลือกได้หลายไฟล์ แปลงทีละรูปบนเครื่องคุณ แล้วดาวน์โหลดแยกหรือรวมเป็น ZIP ไม่ต้องสมัครสมาชิก")</p></section><section class="gif-seo-faq"><h2>คำถามที่พบบ่อย</h2>

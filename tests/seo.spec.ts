@@ -83,7 +83,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
       "index,follow",
     );
     await expect(
-      page.getByRole("button", { name: "เลือกไฟล์ PDF", exact: true }),
+      page.getByRole("button", { name: "กำลังเตรียมเครื่องมือ…", exact: true }),
     ).toBeDisabled();
   }
   const missing = await page.goto(new URL("/tools/missing", page.url()).href);

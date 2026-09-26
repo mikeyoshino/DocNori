@@ -11,7 +11,7 @@
         <div data-drop class="tool-file-drop">
             <Icon Name="upload" /><h2>เลือก PDF ที่ต้องการแปลงเป็น Word</h2>
             <p>ลากไฟล์มาวางที่นี่ หรือเลือกจากเครื่องของคุณ</p>
-            <button data-choose class="button button-blue" disabled="@(!Ready)">เลือกไฟล์ PDF <Icon Name="arrow" /></button>
+            <FileSelectButton Ready="Ready" Label="เลือกไฟล์ PDF" data-choose="" />
             <span class="file-limits">1–20 ไฟล์ · ขนาดรวมไม่เกิน 25 MB / 100 หน้า</span>
         </div>
         <p class="tool-local-note"><Icon Name="lock" /> ไฟล์อยู่กับคุณ · ไม่ต้องสมัครสมาชิก</p>

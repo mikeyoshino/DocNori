@@ -1,0 +1,15 @@
+<button @attributes="AdditionalAttributes" type="button" class="button button-blue file-select-button" disabled="@IsLoading" aria-busy="@(IsLoading ? "true" : "false")" aria-label="@AccessibleLabel" @onclick="OnClick">
+    <span class="file-select-label" aria-hidden="@(IsLoading ? "true" : "false")">@Label <Icon Name="arrow" /></span>
+    <span class="file-select-spinner" aria-hidden="true"></span>
+</button>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public bool Ready { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool IsLoading => !Ready || Busy;
+    private string AccessibleLabel => !Ready ? "กำลังเตรียมเครื่องมือ…" : Busy ? "กำลังเปิดเอกสาร…" : Label;
+}

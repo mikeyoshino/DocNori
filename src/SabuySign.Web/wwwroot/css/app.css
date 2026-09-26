@@ -84,3 +84,13 @@ a.tool-launch{display:inline-flex;align-items:center;gap:8px}.tool-launch.tool-p
 .tool-start .tool-guide h2 { font-size: clamp(21px, 3vw, 27px); line-height: 1.5; margin: 0 0 18px; }
 .tool-start .tool-guide p { font-size: 16px; line-height: 1.9; max-width: none; margin: 8px 0 16px; color: var(--muted); }
 .tool-guide li { line-height: 1.8; }
+
+/* Shared file selection: preserve the label's size while showing only a spinner. */
+.file-select-button{display:inline-grid;grid-template-areas:"content";place-items:center;gap:0;max-width:100%}
+.file-select-button .file-select-label{grid-area:content;display:inline-flex;align-items:center;justify-content:center;gap:9px}
+.file-select-button .file-select-spinner{grid-area:content;width:20px;height:20px;border:2px solid #ffffff55;border-top-color:currentColor;border-radius:50%;visibility:hidden}
+.file-select-button[aria-busy="true"]:disabled{opacity:1;cursor:wait;background:var(--blue)}
+.file-select-button[aria-busy="true"] .file-select-label{visibility:hidden}
+.file-select-button[aria-busy="true"] .file-select-spinner{visibility:visible;animation:file-select-spin .8s linear infinite}
+@keyframes file-select-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.file-select-button[aria-busy="true"] .file-select-spinner{animation:none}}
