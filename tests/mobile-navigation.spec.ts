@@ -2,7 +2,7 @@ import { chromium, webkit, expect, test } from "@playwright/test";
 
 for (const browserName of ["chromium", "webkit"] as const) {
   test.describe(`${browserName} mobile touch navigation`, () => {
-    for (const menu of ["direct", "convert", "all"] as const) {
+    for (const menu of ["direct", "organize", "convert", "all"] as const) {
       test(`${menu} links navigate from home and tool pages`, async ({
         baseURL,
       }) => {
@@ -28,9 +28,17 @@ for (const browserName of ["chromium", "webkit"] as const) {
               name: "เมนูหลัก",
               exact: true,
             });
-            let link = nav.locator('a.primary-nav-link[href="/tools/merge"]');
-            let destination = "/tools/merge";
-            if (menu === "convert") {
+            let link = nav.locator(
+              'a.primary-nav-link[href="/tools/compress"]',
+            );
+            let destination = "/tools/compress";
+            if (menu === "organize") {
+              await nav.locator(".nav-organize summary").tap();
+              link = nav.locator(
+                '.organize-nav-dropdown a[href="/tools/organize"]',
+              );
+              destination = "/tools/organize";
+            } else if (menu === "convert") {
               await nav
                 .locator("summary")
                 .filter({ hasText: "แปลง PDF" })

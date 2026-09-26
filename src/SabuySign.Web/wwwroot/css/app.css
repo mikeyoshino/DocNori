@@ -94,3 +94,5 @@ a.tool-launch{display:inline-flex;align-items:center;gap:8px}.tool-launch.tool-p
 .file-select-button[aria-busy="true"] .file-select-spinner{visibility:visible;animation:file-select-spin .8s linear infinite}
 @keyframes file-select-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.file-select-button[aria-busy="true"] .file-select-spinner{animation:none}}
+
+@media(min-width:1001px){.tools-home .tool-groups:has(>.document-tool:nth-child(13):last-child)>.document-tool:nth-child(n+10){flex-basis:calc((100% - 24px)/2)}}

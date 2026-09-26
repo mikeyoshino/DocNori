@@ -1,0 +1,53 @@
+@using SabuySign.Web.Features.Tools
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+<PageTitle>จัดหน้า PDF ออนไลน์ เรียง ลบ หมุน และเพิ่มหน้า — DocNori</PageTitle>
+<SiteNav />
+<main class="organize-tool category-organize" @ref="Root">
+    <section data-intro class="tool-start tool-start-intro">
+        <span class="tool-card-icon"><ToolArtwork Name="organize" /></span>
+        <h1>จัดหน้า PDF</h1><p>เรียงหน้าให้ถูก ลบหน้าที่ไม่ใช้ แล้วรวมเป็นไฟล์พร้อมส่ง</p>
+        <div data-drop class="tool-file-drop"><Icon Name="upload" /><h2>เลือก PDF ที่ต้องการจัดหน้า</h2><p>เลือกหลายไฟล์ แล้วจัดหน้าทั้งหมดไว้ด้วยกัน</p><FileSelectButton Ready="Ready" Label="เลือกไฟล์ PDF" data-choose="" /><span class="file-limits">สูงสุด 20 ไฟล์ · รวมไม่เกิน 25 MB / 100 หน้า</span></div>
+        <p class="tool-local-note"><Icon Name="lock" /> ทำบนเครื่องคุณ · ไม่ส่งเอกสารขึ้นเซิร์ฟเวอร์</p>
+        <section class="tool-guide gif-seo"><h2>จัดระเบียบหน้า PDF ใน 3 ขั้นตอน</h2><ol class="gif-seo-steps"><li><strong>เลือกไฟล์</strong><p>เพิ่ม PDF หนึ่งไฟล์หรือหลายไฟล์ แล้วดูภาพตัวอย่างทุกหน้า</p></li><li><strong>จัดหน้า</strong><p>ลากสลับลำดับ หมุน ลบ ทำสำเนา หรือแทรกหน้าว่าง ย้อนกลับได้เมื่อเปลี่ยนใจ</p></li><li><strong>ดาวน์โหลด</strong><p>กดจัดหน้า PDF แล้วดาวน์โหลดเอกสารที่เรียงใหม่เป็นไฟล์เดียว</p></li></ol>
+            <h2>รวมเอกสารและเลือกเก็บเฉพาะหน้าที่ต้องการ</h2><p>เหมาะกับการเตรียมเอกสารสมัครงาน เรียงหน้าที่สแกนผิดลำดับ หรือรวบรวมเอกสารจากหลายไฟล์ หากต้องการรวมทั้งไฟล์ ใช้<a href="/tools/merge">รวม PDF</a> หรือใช้<a href="/tools/split">แยก PDF</a>เพื่อบันทึกเป็นหลายไฟล์</p>
+            <div class="gif-seo-faq"><h2>คำถามที่พบบ่อย</h2><details><summary>ข้อความและความชัดของ PDF เปลี่ยนไหม?</summary><p>นำหน้าจากต้นฉบับมาจัดเรียงโดยไม่แปลงทั้งหน้าเป็นภาพ ขนาดหน้าและเนื้อหาเดิมยังอยู่ ช่องกรอกข้อมูลจะเป็นเนื้อหาคงที่ บุ๊กมาร์กและลายเซ็นดิจิทัลเดิมจะไม่ถูกเก็บไว้ในไฟล์ใหม่</p></details><details><summary>จัดหน้า PDF บนมือถือได้ไหม?</summary><p>ได้ ใช้ปุ่มเลื่อนก่อน–หลังบนแต่ละหน้าเพื่อจัดลำดับ แตะปุ่มขยายเพื่อดูรายละเอียดก่อนดาวน์โหลด</p></details><details><summary>ไฟล์ถูกเก็บไว้ที่ไหน?</summary><p>ประมวลผลในเบราว์เซอร์ ไม่ส่ง PDF ขึ้นเซิร์ฟเวอร์และไม่เก็บร่าง ดาวน์โหลดงานก่อนปิดหรือรีเฟรชหน้า ไม่รองรับไฟล์ที่มีรหัสผ่าน</p></details></div>
+        </section>
+    </section>
+    <input data-files type="file" accept="application/pdf,.pdf" multiple hidden />
+    <div data-feedback class="organize-feedback"><p data-status role="status"></p><p data-error class="organize-error" role="alert" hidden></p></div>
+    <section data-workspace class="organize-workspace" hidden>
+        <div class="organize-stage">
+            <header class="organize-toolbar"><div><h1>หน้าเอกสารของคุณ</h1><p>ลากเพื่อเรียงหน้า หรือใช้ปุ่มเลื่อนบนแต่ละหน้า</p></div><FileSourcePicker Label="เพิ่มไฟล์ PDF" ShowCloudOptions="false" /></header>
+            <div class="organize-controls"><div class="organize-history"><button data-undo type="button" aria-label="ย้อนกลับ" title="ย้อนกลับ"><Icon Name="undo" /></button><button data-redo type="button" aria-label="ทำซ้ำ" title="ทำซ้ำ"><Icon Name="redo" /></button></div><span data-page-count></span><button data-reverse type="button" class="button button-quiet small"><Icon Name="sort" /> กลับลำดับหน้า</button></div>
+            <ol data-pages class="organize-pages" aria-label="หน้าเอกสารเรียงตามลำดับ"></ol>
+            <div data-empty class="organize-empty" hidden><Icon Name="file" /><h2>ยังไม่มีหน้าในเอกสาร</h2><p>กดย้อนกลับ เพิ่มไฟล์ หรือเพิ่มหน้าว่างเพื่อเริ่มต่อ</p></div>
+        </div>
+        <aside class="organize-sidebar"><div class="organize-sidebar-title"><span class="eyebrow">ORGANIZE PDF</span><h2>จัดหน้า PDF</h2><p data-summary></p></div>
+            <div class="organize-sidebar-body"><div class="organize-files-heading"><h3>ไฟล์ของคุณ</h3><button data-reset type="button">คืนค่าเดิม</button></div><ul data-sources class="organize-sources"></ul>
+                <div class="organize-selection"><h3 data-selected-label>เลือกหน้าที่ต้องการ</h3><div class="organize-selection-actions"><button data-select-all type="button">เลือกทั้งหมด</button><button data-deselect type="button">ล้างการเลือก</button></div><div class="organize-bulk"><button data-rotate type="button" class="button button-quiet"><Icon Name="rotate" /> หมุนหน้า</button><button data-delete type="button" class="button button-quiet"><Icon Name="trash" /> ลบหน้า</button></div></div>
+                <button data-blank type="button" class="button button-quiet organize-blank"><Icon Name="plus" /> เพิ่มหน้าว่าง A4</button><p class="organize-tip">แทรกถัดจากหน้าที่เลือก หรือท้ายเอกสาร</p>
+            </div>
+            <div class="organize-footer"><button data-export type="button" class="button button-blue"><span>จัดหน้า PDF</span><Icon Name="arrow" /></button><p><Icon Name="lock" /> เอกสารอยู่บนเครื่องคุณ</p><button data-restart type="button" class="organize-start-over">เริ่มใหม่</button></div>
+        </aside>
+    </section>
+    <section data-result class="organize-result" hidden><span class="organize-success"><Icon Name="check" /></span><h1>จัดหน้า PDF เรียบร้อยแล้ว</h1><p data-result-summary></p><button data-download type="button" class="button button-blue"><Icon Name="download" /> ดาวน์โหลด PDF</button><div><button data-back type="button" class="button button-quiet">กลับไปจัดหน้า</button><button data-restart type="button" class="button button-quiet">เลือกไฟล์ใหม่</button></div><p class="organize-tip">ดาวน์โหลดเก็บไว้ก่อนปิดหน้านี้</p><a href="/tools/compress">ลดขนาด PDF ต่อ <Icon Name="arrow" /></a></section>
+    <dialog data-preview class="organize-preview"><header><h2 data-preview-title>ตัวอย่างหน้า</h2><button data-preview-close type="button" aria-label="ปิดตัวอย่าง"><Icon Name="close" /></button></header><p data-preview-status role="status"></p><div><canvas></canvas></div></dialog>
+</main>
+@code {
+    private ElementReference Root;
+    private IJSObjectReference? Module;
+    private bool Ready;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/organize.js");
+        await Module.InvokeVoidAsync("init", Root);
+        Ready = true;
+        StateHasChanged();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null) { await Module.InvokeVoidAsync("dispose", Root); await Module.DisposeAsync(); }
+    }
+}

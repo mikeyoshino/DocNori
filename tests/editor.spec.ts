@@ -162,7 +162,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(12);
+  await expect(page.locator(".document-tool")).toHaveCount(13);
   await expect(page.locator(".document-tool.upcoming")).toHaveCount(0);
   await page.getByRole("button", { name: "แปลงเอกสาร", exact: true }).click();
   await expect(
@@ -178,7 +178,7 @@ test("tool directory filters categories and remains readable on desktop and mobi
   await expect(page.locator(".document-tool button")).toHaveCount(0);
   await page.getByRole("button", { name: "ทั้งหมด", exact: true }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".document-tool")).toHaveCount(12);
+  await expect(page.locator(".document-tool")).toHaveCount(13);
   await page
     .getByRole("button", { name: "วิดีโอและเสียง", exact: true })
     .click();
@@ -196,14 +196,14 @@ test("tool directory filters categories and remains readable on desktop and mobi
     }
     return [...counts.values()];
   });
-  expect(rows).toEqual([3, 3, 3, 3]);
+  expect(rows).toEqual([3, 3, 3, 2, 2]);
   await expect(
     page.locator('.site-navigation a[href="/tools/pdf-to-powerpoint"]'),
   ).toHaveCount(2);
   await page.screenshot({ path: "artifacts/home.png", fullPage: true });
   await page.setViewportSize({ width: 820, height: 1000 });
   const lastCard = await page.locator(".document-tool").last().boundingBox();
-  expect(lastCard!.x).toBeGreaterThan(410);
+  expect(Math.abs(lastCard!.x + lastCard!.width / 2 - 410)).toBeLessThan(2);
   await page.screenshot({ path: "artifacts/home-tablet.png", fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -346,8 +346,9 @@ test("shared navigation has direct tools, grouped dropdowns and mobile keyboard 
 }) => {
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "เมนูหลัก", exact: true });
+  await nav.locator(".nav-organize summary").click();
   await expect(
-    nav.getByRole("link", { name: "แยก PDF", exact: true }),
+    nav.getByRole("link", { name: "แยกไฟล์ PDF", exact: true }),
   ).toHaveAttribute("href", "/tools/split");
   const convert = nav.locator("summary").filter({ hasText: "แปลง PDF" });
   const all = nav.locator("summary").filter({ hasText: "เครื่องมือทั้งหมด" });
@@ -385,9 +386,8 @@ test("shared navigation has direct tools, grouped dropdowns and mobile keyboard 
   await expect(all).toBeFocused();
   await convert.hover();
   await expect(nav.locator(".convert-dropdown")).toBeVisible();
-  // The expanded conversion menu can cover the hero heading; click the
-  // exposed edge of the hero to exercise an actual outside pointer event.
-  await page.locator(".tools-hero").click({ position: { x: 10, y: 10 } });
+  // Click the page gutter below the menu, outside its overlay.
+  await page.mouse.click(10, 800);
   await expect(nav.locator(".convert-dropdown")).toBeHidden();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "เปิดเมนูเครื่องมือ" }).click();

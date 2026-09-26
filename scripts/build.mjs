@@ -17,6 +17,8 @@ await build({
     "heic-jpg.worker": "src/SabuySign.Web/Client/image-tools/heic.worker.ts",
     compress: "src/SabuySign.Web/Client/compress/index.ts",
     "compress.worker": "src/SabuySign.Web/Client/compress/worker.ts",
+    organize: "src/SabuySign.Web/Client/organize/index.ts",
+    "organize.worker": "src/SabuySign.Web/Client/organize/worker.ts",
     split: "src/SabuySign.Web/Client/split/index.ts",
     merge: "src/SabuySign.Web/Client/merge/index.ts",
     "convert-word": "src/SabuySign.Web/Client/convert-word/index.ts",

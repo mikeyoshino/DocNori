@@ -54,7 +54,7 @@ test("public pages contain real HTML and metadata without JavaScript", async ({
   await expect(
     page.getByRole("heading", { name: "จัดการ PDF ออนไลน์ ให้เป็นเรื่องง่าย" }),
   ).toBeVisible();
-  await expect(page.locator(".document-tool")).toHaveCount(12);
+  await expect(page.locator(".document-tool")).toHaveCount(13);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     "http://localhost:8080/",
@@ -206,7 +206,8 @@ test("landing uses static SSR and tools start only the WebAssembly runtime", asy
   expect(
     requests.filter((url) => /\.wasm(?:\?|$)|blazor\.boot|_blazor\//.test(url)),
   ).toEqual([]);
-  await page.getByRole("link", { name: "รวม PDF", exact: true }).click();
+  await page.locator(".nav-organize summary").click();
+  await page.locator('.organize-nav-dropdown a[href="/tools/merge"]').click();
   await expect(
     page.getByRole("button", { name: "เลือกไฟล์ PDF", exact: true }),
   ).toBeEnabled();

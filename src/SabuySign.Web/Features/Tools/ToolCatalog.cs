@@ -7,7 +7,7 @@ public static class ToolCatalog
 {
     public static IReadOnlyList<ToolCategory> Categories { get; } = [
         new("edit", "แก้ไขและเซ็น"),
-        new("organize", "จัดการไฟล์ PDF"),
+        new("organize", "จัดการ PDF"),
         new("optimize", "ลดขนาดไฟล์"),
         new("convert", "แปลงเอกสาร"),
         new("images", "รูปภาพ"),
@@ -19,6 +19,7 @@ public static class ToolCatalog
         new("fill-sign", "edit", "กรอกและเซ็น PDF", "เพิ่มข้อความไทย–อังกฤษ วางลายเซ็น และตรวจเอกสารก่อนดาวน์โหลด", "text", "PDF", true),
         new("merge", "organize", "รวมไฟล์ PDF", "รวมเอกสารหลายไฟล์เป็น PDF เดียว พร้อมจัดลำดับไฟล์ตามต้องการ", "merge", "PDF + PDF", true),
         new("split", "organize", "แยกไฟล์ PDF", "แยกหน้าที่ต้องการจาก PDF ออกเป็นเอกสารใหม่", "split", "PDF → PDF", true),
+        new("organize", "organize", "จัดหน้า PDF", "เรียง ลบ หมุน ทำสำเนา และเพิ่มหน้า PDF รวมหลายไฟล์เป็นเอกสารเดียว", "organize", "PDF → PDF", true),
         new("compress", "optimize", "ลดขนาด PDF", "เตรียมไฟล์ขนาดเล็กลงสำหรับแนบอีเมล ส่งต่อ หรืออัปโหลด", "compress", "PDF", true),
         new("jpg-to-pdf", "convert", "JPG / PNG เป็น PDF", "รวมรูปเอกสารหลายรูปเป็น PDF จัดลำดับ หมุนรูป และเลือกขนาดกระดาษได้", "image-pdf", "JPG / PNG → PDF", true),
         new("compress-image", "images", "ลดขนาดรูป JPG / PNG", "บีบอัดรูปโดยคงขนาดภาพเดิม เปรียบเทียบความชัดและดาวน์โหลดหลายรูปได้", "image-compress", "JPG / PNG", true),

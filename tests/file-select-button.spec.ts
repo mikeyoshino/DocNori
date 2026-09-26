@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 const tools = [
   "fill-sign",
   "merge",
+  "organize",
   "split",
   "compress",
   "pdf-to-word",
