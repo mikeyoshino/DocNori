@@ -3,6 +3,7 @@ WORKDIR /source
 COPY package*.json ./
 RUN npm ci
 COPY scripts/ scripts/
+COPY third-party/qpdf/ third-party/qpdf/
 COPY src/SabuySign.Web/Client/ src/SabuySign.Web/Client/
 RUN npm run build
 
