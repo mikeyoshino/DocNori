@@ -1,3 +1,4 @@
+import { createGhostRenderer } from "./ghost";
 import { api, button, confirmAction, escape } from "./api";
 import {
   defaults,
@@ -25,6 +26,7 @@ export async function workbench(
     await (await fetch("/fonts/Sarabun-Regular.ttf")).arrayBuffer(),
   );
   const measure = makeMeasure(font);
+  const renderGhost = createGhostRenderer(font);
   const original = new PdfView(),
     result = new PdfView();
   await original.load(source);
@@ -321,6 +323,8 @@ export async function workbench(
         label.className = "template-box-label";
         label.textContent = f.label;
         box.append(label);
+        const sample = l.items.find((item) => item.id === p.id);
+        if (sample) box.append(renderGhost(sample, scale));
         box.onclick = (e) => {
           e.stopPropagation();
           selected = p.id;
@@ -465,6 +469,7 @@ export async function workbench(
       worker?.terminate();
       output = undefined;
       clearTimeout(timer);
+      renderBoxes();
       if (previewing) timer = setTimeout(() => void refresh(), 350);
     };
     input("ชื่อช่อง", f.label, "text", (s) => (f.label = s)).maxLength = 100;

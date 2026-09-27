@@ -24,6 +24,8 @@ export function init(header: HTMLElement) {
         )!;
         email.hidden = !me.authenticated;
         email.textContent = me.email ?? "";
+        header.querySelector<HTMLAnchorElement>("[data-template-app]")!.href =
+          me.authenticated ? "/workspace/templates" : "/templates";
         header.querySelector<HTMLElement>("[data-account-login]")!.hidden =
           !!me.authenticated;
         header.querySelector<HTMLElement>("[data-account-logout]")!.hidden =
@@ -106,7 +108,9 @@ export function init(header: HTMLElement) {
         matchMedia("(min-width: 1001px)").matches
       ) {
         cancel();
-        timer = setTimeout(close, 180);
+        timer = setTimeout(() => {
+          for (const menu of menus) if (menu !== accountMenu) menu.open = false;
+        }, 180);
       }
     },
     { signal },

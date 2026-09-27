@@ -97,15 +97,26 @@ a.tool-launch{display:inline-flex;align-items:center;gap:8px}.tool-launch.tool-p
 
 @media(min-width:1001px){.tools-home .tool-groups:has(>.document-tool:nth-child(13):last-child)>.document-tool:nth-child(n+10){flex-basis:calc((100% - 24px)/2)}}
 
-/* Private workspace entry stays separate from the public tool navigation. */
-.account-menu{margin-left:auto;position:relative;flex-shrink:0}
-.account-menu>summary{min-height:44px;width:44px;justify-content:center;border:1px solid var(--line);border-radius:50%;padding:0}
-.account-menu>summary svg{width:21px;height:21px;stroke-width:1.7}
-.account-menu[open]>summary svg{transform:none}
-.account-menu-panel{position:absolute;right:0;top:calc(100% + 12px);width:248px;max-width:calc(100vw - 32px);padding:10px;background:white;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px #17243320}
-.account-menu-panel a,.account-menu-panel button{display:flex;align-items:center;min-height:44px;padding:10px 12px;width:100%;box-sizing:border-box;border:0;background:transparent;border-radius:8px;text-align:left;font:inherit;font-size:14px;cursor:pointer}
-.account-menu-panel [hidden]{display:none}
-.account-menu-panel a:hover,.account-menu-panel button:hover{background:#edf7ff;color:var(--blue)}
-.account-menu-panel p{font-size:12px;padding:0 12px;overflow-wrap:anywhere;color:#637487}
-.account-menu-panel [data-account-status]:empty{display:none}
-@media(max-width:1000px){.nav-mobile-toggle{margin-left:auto}.account-menu{margin-left:0}.account-menu>summary{border:1px solid var(--line);justify-content:center;padding:0}}
+/* App launcher: public tools and account actions remain distinct. */
+
+.app-launcher{position:relative;margin-left:auto;flex-shrink:0;font-family:Sarabun,sans-serif}
+.app-launcher>summary{width:44px;height:44px;border:1px solid #cce5f5;border-radius:12px;background:#eaf6ff;color:#1686ce;display:grid;place-items:center;cursor:pointer}
+.app-launcher>summary svg{width:22px;height:22px;fill:currentColor}
+.launcher-panel{position:absolute;z-index:90;right:0;top:calc(100% + 17px);width:352px;max-width:calc(100vw - 32px);background:#fff;border:1px solid #dfe7ef;box-shadow:0 16px 44px #192c3e1c;border-radius:18px;padding:0;text-align:left;overflow:hidden}
+.launcher-panel[hidden]{display:none}.launcher-heading{padding:22px 22px 14px;margin:0!important;color:#263b4e;font-size:16px!important;font-weight:600;line-height:1.5}
+.launcher-app{display:flex;align-items:center;gap:14px;padding:16px 14px;margin:0 10px 14px;border:1px solid transparent;border-radius:12px;text-decoration:none;color:#192c3e;background:#f4f9fd;min-height:88px;cursor:pointer}
+.launcher-app:hover{border-color:#cce5f5;background:#eaf6ff}.launcher-app-icon{width:56px;height:56px;flex-shrink:0;background:#e0f1fd;border-radius:13px;display:grid;place-items:center;color:#1686ce}.launcher-app-icon svg{width:36px;height:36px}
+.launcher-app strong{display:block;font-size:17px;font-weight:600;line-height:1.5}.launcher-app small{display:block;font-size:13px;line-height:1.6;margin-top:4px;color:#64798a}.launcher-app .arrow{width:18px;height:18px;fill:none;stroke:#7c93a4;stroke-width:1.6;margin-left:auto;flex-shrink:0}
+.launcher-account{border-top:1px solid #e8eef3;padding:10px 12px}.launcher-account a{display:flex;align-items:center;gap:11px;border-radius:9px;padding:10px;min-height:44px;text-decoration:none;color:#566c7f;font-size:14px}.launcher-account a:hover{background:#f4f7fa}.launcher-account svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6}
+.app-launcher summary:focus-visible,.app-launcher a:focus-visible{outline:3px solid #6bbaf0;outline-offset:3px}
+@media(max-width:1000px){.app-launcher{margin-left:0}.launcher-panel{top:calc(100% + 14px);width:352px}.nav-mobile-toggle{margin-left:auto}}
+
+.app-launcher>summary{min-height:44px;padding:0;list-style:none}
+.app-launcher>summary svg{stroke:none;transition:none}
+.app-launcher[open]>summary svg{transform:none}
+.app-launcher .launcher-panel [hidden]{display:none}
+.launcher-account button{width:100%;min-height:44px;background:none;border:0;border-radius:9px;text-align:left;padding:10px;font:inherit;font-size:14px;color:#566c7f;cursor:pointer}
+.launcher-account button:hover{background:#f4f7fa}
+.launcher-account p{font-size:13px;overflow-wrap:anywhere;color:#64798a;margin:8px 10px}
+.launcher-account [data-account-status]:empty{display:none}
+@media(max-width:1000px){.app-launcher>summary{justify-content:center;padding:0;border:1px solid #cce5f5}}

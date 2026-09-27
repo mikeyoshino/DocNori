@@ -1,3 +1,4 @@
+import { textBaseline } from "./text-metrics";
 import { markLines } from "./marks";
 import { penPath } from "../signatures/pen";
 import { inkPath } from "../signatures/curves";
@@ -204,11 +205,13 @@ export async function exportPdf(
             : 0;
       const baseline =
         item.y +
-        index * lineHeight +
-        (lineHeight +
-          ((shaped.source.ascent + shaped.source.descent) * item.size) /
-            shaped.source.unitsPerEm) /
-          2;
+        textBaseline(
+          item.size,
+          shaped.source.ascent,
+          shaped.source.descent,
+          shaped.source.unitsPerEm,
+          index,
+        );
       const [x, y] = point(item.x + align, baseline);
       page.pushOperators(
         setTextMatrix(rx - ox, ry - oy, ux - ox, uy - oy, x, y),
