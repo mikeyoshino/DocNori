@@ -1,6 +1,24 @@
 import { api, post } from "./api";
+function safeReturnUrl(value: string | null) {
+  if (
+    !value?.startsWith("/workspace/") ||
+    /[\\\u0000-\u001f\u007f]/.test(value)
+  )
+    return "/workspace/templates";
+  try {
+    const url = new URL(value, location.origin);
+    return url.origin === location.origin &&
+      url.pathname.startsWith("/workspace/")
+      ? url.pathname + url.search + url.hash
+      : "/workspace/templates";
+  } catch {
+    return "/workspace/templates";
+  }
+}
 export async function account(root: HTMLElement, action: string) {
   const linkParams = new URLSearchParams(location.search);
+  const next = safeReturnUrl(linkParams.get("returnUrl"));
+  const returnQuery = `?returnUrl=${encodeURIComponent(next)}`;
   if (action === "reset" || action === "verify")
     history.replaceState(null, "", location.pathname);
   let me;
@@ -51,7 +69,7 @@ export async function account(root: HTMLElement, action: string) {
       '<a class="button button-blue" href="/account/login">เข้าสู่ระบบ</a>';
     return;
   }
-  content.innerHTML = `${["login", "register"].includes(action) ? `<a class="button button-quiet account-google ${me.googleEnabled ? "" : "unavailable"}" ${me.googleEnabled ? 'href="/api/account/google?returnUrl=/workspace/templates"' : 'aria-disabled="true"'}>เข้าสู่ระบบด้วย Google</a>${me.googleEnabled ? "" : '<p class="muted">Google ยังไม่เปิดใช้งาน</p>'}<div class="account-divider">หรือใช้อีเมล</div>` : ""}<form>${action !== "reset" ? '<label>อีเมล<input name="email" type="email" autocomplete="email" required maxlength="254"></label>' : ""}${action !== "forgot" ? `<label>รหัสผ่าน<input name="password" type="password" autocomplete="${action === "login" ? "current-password" : "new-password"}" required minlength="${action === "login" ? 1 : 12}" maxlength="128"></label>${action !== "login" ? '<p class="muted">อย่างน้อย 12 ตัวอักษร มีตัวพิมพ์ใหญ่ พิมพ์เล็ก ตัวเลข และสัญลักษณ์</p>' : ""}` : ""}<button class="button button-blue" type="submit">${titles[action] ?? titles.login}</button></form><div class="account-links"><a href="/account/login">เข้าสู่ระบบ</a><a href="/account/register">สมัครสมาชิก</a><a href="/account/forgot">ลืมรหัสผ่าน</a></div>`;
+  content.innerHTML = `${["login", "register"].includes(action) ? `<a class="button button-quiet account-google ${me.googleEnabled ? "" : "unavailable"}" ${me.googleEnabled ? `href="/api/account/google${returnQuery}"` : 'aria-disabled="true"'}>เข้าสู่ระบบด้วย Google</a>${me.googleEnabled ? "" : '<p class="muted">Google ยังไม่เปิดใช้งาน</p>'}<div class="account-divider">หรือใช้อีเมล</div>` : ""}<form>${action !== "reset" ? '<label>อีเมล<input name="email" type="email" autocomplete="email" required maxlength="254"></label>' : ""}${action !== "forgot" ? `<label>รหัสผ่าน<input name="password" type="password" autocomplete="${action === "login" ? "current-password" : "new-password"}" required minlength="${action === "login" ? 1 : 12}" maxlength="128"></label>${action !== "login" ? '<p class="muted">อย่างน้อย 12 ตัวอักษร มีตัวพิมพ์ใหญ่ พิมพ์เล็ก ตัวเลข และสัญลักษณ์</p>' : ""}` : ""}<button class="button button-blue" type="submit">${titles[action] ?? titles.login}</button></form><div class="account-links"><a href="/account/login${returnQuery}">เข้าสู่ระบบ</a><a href="/account/register${returnQuery}">สมัครสมาชิก</a><a href="/account/forgot${returnQuery}">ลืมรหัสผ่าน</a></div>`;
   if (
     (action === "register" || action === "forgot") &&
     me.emailEnabled === false
@@ -75,12 +93,9 @@ export async function account(root: HTMLElement, action: string) {
     try {
       await post("/api/account/" + action, data);
       if (action === "login") {
-        const next = new URLSearchParams(location.search).get("returnUrl");
-        location.assign(
-          next?.startsWith("/workspace/") ? next : "/workspace/templates",
-        );
+        location.assign(next);
       } else if (action === "register") {
-        location.assign("/workspace/templates");
+        location.assign(next);
       } else {
         form.reset();
         msg.textContent =

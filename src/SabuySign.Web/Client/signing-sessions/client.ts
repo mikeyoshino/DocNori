@@ -1,3 +1,4 @@
+import { beginActivity, withActivity } from "../shared/activity";
 import { newSecret, hashSecret } from "../signatures/crypto";
 import { seal, unseal, validatePlacements } from "./crypto";
 import { signatureSvg } from "../signatures/data";
@@ -84,9 +85,10 @@ export class SigningSession {
       dialog("signing-mode").close();
       dialog("signing-create").showModal();
       $<HTMLButtonElement>("signing-create-confirm").disabled = true;
-      const r = await fetch("/api/signing/config");
-      if (!(await r.json()).enabled)
-        throw new Error("บริการเซ็นร่วมกันยังไม่เปิดใช้งาน");
+      const config = await withActivity(async () =>
+        (await fetch("/api/signing/config")).json(),
+      );
+      if (!config.enabled) throw new Error("บริการเซ็นร่วมกันยังไม่เปิดใช้งาน");
       $<HTMLButtonElement>("signing-create-confirm").disabled = false;
     });
     listen("signing-create-confirm", () => this.create());
@@ -149,6 +151,16 @@ export class SigningSession {
     }
   }
   private async request(path: string, init: RequestInit = {}) {
+    // State/presence and received signature batches update silently in the background.
+    if (
+      path === "/state" ||
+      path === "/presence" ||
+      (path.startsWith("/batches/") && !init.method)
+    )
+      return this.sendRequest(path, init);
+    return withActivity(() => this.sendRequest(path, init));
+  }
+  private async sendRequest(path: string, init: RequestInit = {}) {
     const c = this.credentials!;
     const response = await fetch(`/api/signing/${c.id}${path}`, {
       ...init,
@@ -271,6 +283,7 @@ export class SigningSession {
     if (this.working) return;
     this.working = true;
     $("signing-create-confirm").setAttribute("disabled", "");
+    const finishActivity = beginActivity();
     try {
       const document = await this.hooks.document();
       if (document.bytes.length > 25 * 1024 * 1024)
@@ -312,6 +325,7 @@ export class SigningSession {
       await this.start();
       this.share();
     } finally {
+      finishActivity();
       this.working = false;
       $("signing-create-confirm").removeAttribute("disabled");
       this.update();

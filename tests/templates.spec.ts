@@ -409,11 +409,11 @@ test("workspace uploads a real multipart PDF, opens its designer, duplicates and
     .locator(".workspace-heading")
     .getByRole("link", { name: "สร้างแม่แบบ" })
     .click();
-  await expect(page.locator(".template-privacy")).toContainText(
-    "ไฟล์แม่แบบจะถูกเก็บในบัญชี",
+  await expect(page.locator(".template-upload")).toContainText(
+    "เก็บในบัญชีของคุณ",
   );
   await page.getByLabel("ชื่อแม่แบบ", { exact: true }).fill("แม่แบบอัปโหลด");
-  await page.getByLabel("เลือกไฟล์ PDF", { exact: true }).setInputFiles({
+  await page.locator("input[name=file]").setInputFiles({
     name: "private-original.pdf",
     mimeType: "application/pdf",
     buffer: pdf,
@@ -425,7 +425,7 @@ test("workspace uploads a real multipart PDF, opens its designer, duplicates and
   await expect(page.getByLabel("ชื่อแม่แบบ", { exact: true })).toHaveValue(
     "แม่แบบอัปโหลด",
   );
-  await expect(page.locator("[data-fields]")).toContainText("เพิ่มช่องข้อมูล");
+  await expect(page.locator("[data-fields]")).toContainText("เพิ่มช่อง เช่น");
   await page.getByRole("link", { name: "แม่แบบของฉัน" }).click();
   await expect(page.locator(".template-card")).toHaveCount(1);
   await page.locator(".template-card").getByLabel("จัดการแม่แบบ").click();
@@ -566,7 +566,9 @@ test("designer previews real sample text without saving it as a default", async 
   await expect(
     page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }),
   ).toHaveValue("18");
-  await page.getByRole("button", { name: "พอดีหน้า", exact: true }).click();
+  await page
+    .getByRole("button", { name: "พอดีความกว้าง", exact: true })
+    .click();
   await page.screenshot({
     path: "artifacts/templates-design-preview.png",
     fullPage: true,
@@ -588,6 +590,17 @@ test("designer previews real sample text without saving it as a default", async 
   await expect(
     page.getByRole("button", { name: "ดาวน์โหลด PDF", exact: true }),
   ).toBeEnabled();
+  await page
+    .getByRole("button", { name: "พอดีความกว้าง", exact: true })
+    .click();
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator(".template-paper > canvas")
+          .evaluate((c) => (c as HTMLCanvasElement).toDataURL()),
+    )
+    .toBe(preview);
   expect(
     (await page
       .locator(".template-paper > canvas")
@@ -797,4 +810,335 @@ test("design fields show faint positioned sample text without exporting placehol
   } finally {
     await pdf.destroy();
   }
+});
+
+test("designer communicates placement mode and sizes single-line boxes with the font", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await expect(page.getByLabel("ชื่อแม่แบบ", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "＋ เพิ่มช่องข้อมูล", exact: true })
+    .click();
+  const overlay = page.locator("[data-overlay]");
+  await expect(overlay).toHaveCSS("cursor", "crosshair");
+  await page.keyboard.press("Escape");
+  await expect(overlay).not.toHaveClass(/is-placing/);
+  await page
+    .getByRole("button", { name: "＋ เพิ่มช่องข้อมูล", exact: true })
+    .click();
+  await overlay.click({ position: { x: 100, y: 220 } });
+  await expect(overlay).not.toHaveClass(/is-placing/);
+  const box = page.locator(".template-box.is-selected");
+  const before = (await box.boundingBox())!;
+  await page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }).fill("8");
+  await page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }).blur();
+  const after = (await box.boundingBox())!;
+  expect(after.height).toBeLessThan(before.height);
+  expect(after.width).toBeCloseTo(before.width, 0);
+  await page.screenshot({ path: "artifacts/template-editor-polished.png" });
+});
+
+test("workspace shows a spinner until API and PDF loading finish", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  let release!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/templates/limits", async (route) => {
+    await waiting;
+    await route.fulfill({ json: { maxFields: 100, maxPlacements: 200 } });
+  });
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await expect(page.locator(".app-activity")).toBeVisible();
+  release();
+  await expect(page.locator(".template-box")).toBeVisible();
+  await expect(page.locator(".app-activity")).toBeHidden();
+});
+
+test("workspace releases its loading spinner after an API error", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  await page.route("**/api/templates/limits", (route) =>
+    route.fulfill({ status: 503, json: { error: "กรุณาลองอีกครั้ง" } }),
+  );
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await expect(
+    page.getByRole("heading", { name: "เปิดพื้นที่ทำงานไม่สำเร็จ" }),
+  ).toBeVisible();
+  await expect(page.locator(".app-activity")).toBeHidden();
+});
+
+test("audit: edit recovery, live overflow and save-and-fill are connected", async ({
+  page,
+}) => {
+  const mocked = await mockWorkspace(page, template());
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page
+    .locator("[data-fields]")
+    .getByRole("button", { name: "ชื่อบริษัท", exact: true })
+    .click();
+  await page
+    .getByLabel("ข้อความทดลอง", { exact: true })
+    .fill("ชื่อบริษัทที่ยาวมาก".repeat(20));
+  await expect(page.locator(".template-box.is-overflow")).toHaveCount(1);
+  await page.getByRole("button", { name: "ลบตำแหน่งนี้", exact: true }).click();
+  await expect(page.locator(".template-box")).toHaveCount(0);
+  await page.getByRole("button", { name: "เลิกทำ", exact: true }).click();
+  await expect(page.locator(".template-box")).toHaveCount(1);
+  await page
+    .getByLabel("ชื่อแม่แบบ", { exact: true })
+    .fill("ฉบับใหม่ที่บันทึกก่อนกรอก");
+  await page.getByRole("link", { name: "กรอกข้อมูล", exact: true }).click();
+  await page
+    .getByRole("button", { name: "บันทึกและกรอกข้อมูล", exact: true })
+    .click();
+  await expect(page).toHaveURL(`/workspace/templates/${id}/fill`);
+  expect(mocked.current().name).toBe("ฉบับใหม่ที่บันทึกก่อนกรอก");
+  await expect(page.getByLabel("ชื่อบริษัท", { exact: true })).toHaveValue(
+    "บริษัท ตัวอย่าง",
+  );
+});
+test("audit: keyboard placement retains focus and laptop uses readable fit width", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await expect(page.locator(".template-box")).toBeVisible();
+  expect(
+    (await page.locator(".template-paper").boundingBox())!.width,
+  ).toBeGreaterThan(650);
+  await page
+    .getByRole("button", { name: "＋ เพิ่มช่องข้อมูล", exact: true })
+    .click();
+  await page.getByRole("button", { name: "วางกลางหน้า", exact: true }).click();
+  const selected = page.locator(".template-box.is-selected");
+  await selected.focus();
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe(
+    "BODY",
+  );
+  await expect(page.locator(".template-box")).toHaveCount(2);
+});
+
+test("review: undo cancels placement of a field removed by history", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page
+    .getByRole("button", { name: "＋ เพิ่มช่องข้อมูล", exact: true })
+    .click();
+  await page.getByRole("button", { name: "วางกลางหน้า", exact: true }).click();
+  await page
+    .getByRole("button", { name: "วางข้อมูลนี้อีกตำแหน่ง", exact: true })
+    .click();
+  await page.getByRole("button", { name: "เลิกทำ", exact: true }).click();
+  await expect(page.locator("[data-overlay]")).not.toHaveClass(/is-placing/);
+  await expect(
+    page.getByRole("button", { name: "วางกลางหน้า", exact: true }),
+  ).toBeHidden();
+  await expect(page.locator(".template-box")).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test("review: error link opens the overflowing reused placement", async ({
+  page,
+}) => {
+  const data = template();
+  data.definition.placements[0].width = 300;
+  data.definition.placements.push({
+    ...data.definition.placements[0],
+    id: "narrow",
+    page: 1,
+    width: 24,
+  });
+  await mockWorkspace(page, data);
+  const pdf = await PDFDocument.create();
+  pdf.addPage([595, 842]);
+  pdf.addPage([842, 595]);
+  const bytes = Buffer.from(await pdf.save());
+  await page.route(`**/api/templates/${id}/file`, (r) =>
+    r.fulfill({ contentType: "application/pdf", body: bytes }),
+  );
+  await page.goto(`/workspace/templates/${id}/fill`);
+  await page
+    .locator(".template-error-links")
+    .getByRole("button", { name: "ชื่อบริษัท" })
+    .click();
+  await expect(page.locator("[data-page]")).toHaveText("หน้า 2 / 2");
+});
+
+test("review: cancel pending save handoff keeps user in designer", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  let finish!: () => void;
+  const gate = new Promise<void>((r) => {
+    finish = r;
+  });
+  await page.route(`**/api/templates/${id}`, async (r) => {
+    if (r.request().method() !== "PUT") return r.fallback();
+    await gate;
+    await r.fulfill({
+      json: { ...template(), ...r.request().postDataJSON(), version: 2 },
+    });
+  });
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page.getByLabel("ชื่อแม่แบบ", { exact: true }).fill("แก้ไขแล้ว");
+  await page.getByRole("link", { name: "กรอกข้อมูล", exact: true }).click();
+  await page
+    .getByRole("button", { name: "บันทึกและกรอกข้อมูล", exact: true })
+    .click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  finish();
+  await expect(page.locator("[data-status]")).toContainText("บันทึกแม่แบบแล้ว");
+  await expect(page).toHaveURL(`/workspace/templates/${id}/edit`);
+});
+
+test("review: changing PDF page clears the previous page inspector", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  const pdf = await PDFDocument.create();
+  pdf.addPage([595, 842]);
+  pdf.addPage([842, 595]);
+  const bytes = Buffer.from(await pdf.save());
+  await page.route(`**/api/templates/${id}/file`, (r) =>
+    r.fulfill({ contentType: "application/pdf", body: bytes }),
+  );
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page.locator(".template-box").click();
+  await expect(page.getByLabel("ชื่อช่อง", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "วางข้อมูลนี้อีกตำแหน่ง", exact: true })
+    .click();
+  await page.getByRole("button", { name: "หน้าถัดไป", exact: true }).click();
+  await expect(page.locator("[data-page]")).toHaveText("หน้า 2 / 2");
+  await expect(page.getByLabel("ชื่อช่อง", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "วางกลางหน้า", exact: true }).click();
+  await expect(page.locator(".template-box")).toHaveCount(1);
+  await expect(page.locator(".template-box")).toHaveAttribute(
+    "data-field-id",
+    "company",
+  );
+});
+
+test("audit: mobile keeps main actions and placement target in view", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockWorkspace(page, template());
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await expect(
+    page.getByRole("button", { name: "บันทึกแม่แบบ", exact: true }),
+  ).toBeInViewport();
+  await expect(page.locator(".template-sidebar")).toBeHidden();
+  await page
+    .getByRole("button", { name: "＋ เพิ่มช่องข้อมูล", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "วางกลางหน้า", exact: true }),
+  ).toBeInViewport();
+  await expect(page.locator(".template-paper")).toBeInViewport();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+});
+
+test("audit: new and duplicate fields inherit style and preserve explicit ordering", async ({
+  page,
+}) => {
+  const mock = await mockWorkspace(page, template());
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page.locator(".template-box").click();
+  await page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }).fill("12");
+  await page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }).blur();
+  await page
+    .getByRole("button", { name: "＋ เพิ่มช่องข้อมูล", exact: true })
+    .click();
+  await page.getByRole("button", { name: "วางกลางหน้า", exact: true }).click();
+  await expect(
+    page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }),
+  ).toHaveValue("12");
+  await page
+    .getByRole("button", { name: "ทำสำเนาเป็นช่องใหม่", exact: true })
+    .click();
+  await expect(page.locator(".template-box")).toHaveCount(3);
+  await page
+    .getByRole("button", {
+      name: "ย้าย ช่องข้อมูล 2 (สำเนา) ขึ้น",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("button", { name: "บันทึกแม่แบบ", exact: true }).click();
+  await expect(page.locator("[data-status]")).toContainText("บันทึกแม่แบบแล้ว");
+  expect(mock.current().definition.fields.map((f) => f.label)).toEqual([
+    "ชื่อบริษัท",
+    "ช่องข้อมูล 2 (สำเนา)",
+    "ช่องข้อมูล 2",
+  ]);
+  expect(mock.current().definition.placements.map((p) => p.size)).toEqual([
+    12, 12, 12,
+  ]);
+});
+
+test("audit: untouched required fields wait for interaction before showing an error", async ({
+  page,
+}) => {
+  const data = template();
+  data.definition.fields[0].defaultValue = "";
+  await mockWorkspace(page, data);
+  await page.goto(`/workspace/templates/${id}/fill`);
+  const input = page.getByLabel("ชื่อบริษัท", { exact: true });
+  await expect(input).toHaveAttribute("aria-invalid", "false");
+  await expect(
+    page.getByRole("button", { name: "ดาวน์โหลด PDF", exact: true }),
+  ).toBeDisabled();
+  await input.focus();
+  await input.blur();
+  await expect(input).toHaveAttribute("aria-invalid", "true");
+  await expect(input).toHaveAttribute(
+    "aria-describedby",
+    "field-error-company",
+  );
+});
+
+test("audit: failed save-and-fill preserves the unsaved template", async ({
+  page,
+}) => {
+  await mockWorkspace(page, template());
+  await page.route(`**/api/templates/${id}`, (r) =>
+    r.request().method() === "PUT"
+      ? r.fulfill({
+          status: 409,
+          json: { message: "แม่แบบถูกแก้ไขแล้ว กรุณาลองอีกครั้ง" },
+        })
+      : r.fallback(),
+  );
+  await page.goto(`/workspace/templates/${id}/edit`);
+  await page
+    .getByLabel("ชื่อแม่แบบ", { exact: true })
+    .fill("ร่างที่ต้องเก็บไว้");
+  await page.getByRole("link", { name: "กรอกข้อมูล", exact: true }).click();
+  await page
+    .getByRole("button", { name: "บันทึกและกรอกข้อมูล", exact: true })
+    .click();
+  await expect(page.locator("[data-status]")).toHaveClass(/is-error/);
+  await expect(page).toHaveURL(`/workspace/templates/${id}/edit`);
+  await expect(page.getByLabel("ชื่อแม่แบบ", { exact: true })).toHaveValue(
+    "ร่างที่ต้องเก็บไว้",
+  );
+  await page.getByRole("link", { name: "กรอกข้อมูล", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "บันทึกก่อนกรอกข้อมูล" }),
+  ).toBeVisible();
 });

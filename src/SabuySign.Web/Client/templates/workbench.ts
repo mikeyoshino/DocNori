@@ -1,3 +1,4 @@
+import { EditHistory } from "./history";
 import { createGhostRenderer } from "./ghost";
 import { api, button, confirmAction, escape } from "./api";
 import {
@@ -9,7 +10,10 @@ import {
   type Placement,
 } from "./model";
 import { PdfView } from "./pdf-view";
-import { guardUnsavedWork } from "../shared/leave-guard";
+import {
+  guardUnsavedWork,
+  leaveAfterConfirmation,
+} from "../shared/leave-guard";
 import { setupDropdown } from "../shared/dropdown";
 export async function workbench(
   root: HTMLElement,
@@ -40,24 +44,39 @@ export async function workbench(
     downloaded = false,
     previewing = false,
     zoom = 1,
+    fitWidth = editing,
+    saving = false,
+    snapAlign = false,
     values = defaults(data.definition),
     worker: Worker | undefined,
     output: Uint8Array | undefined,
     requestId = 0,
     timer: ReturnType<typeof setTimeout> | undefined;
+  const snapshot = () => ({ name: data.name, definition: data.definition });
+  const history = new EditHistory(snapshot());
+  let savedSnapshot = JSON.stringify(snapshot());
+  let lastStyle = {
+    size: 16,
+    width: 180,
+    height: 25.6,
+    color: "#172433",
+    align: "left" as Placement["align"],
+    multiline: false,
+  };
+  const touched = new Set<string>();
   const samples: Record<string, string> = Object.create(null);
   const menus: { dispose(): void }[] = [];
   window.addEventListener(
     "keydown",
     (event) => {
       if (event.key === "Escape" && armed) {
-        armed = undefined;
+        setArmed(undefined);
         note("ยกเลิกการวางช่องแล้ว");
       }
     },
     { signal },
   );
-  root.innerHTML = `<header class="workspace-heading"><div><a class="workspace-back" href="/workspace/templates">← แม่แบบของฉัน</a><h1>${escape(data.name)}</h1><p>${editing ? "วางช่องบนเอกสาร แล้วตั้งค่าทางขวา" : "กรอกข้อมูลแล้วดูตัวอย่างก่อนดาวน์โหลด"}</p></div><div data-actions></div></header><p data-status role="status" class="workspace-status"></p><div class="template-workbench ${editing ? "is-design" : "is-fill"}"><aside class="template-fields"><h2>${editing ? "ช่องข้อมูล" : "ข้อมูลเอกสาร"}</h2><div data-fields></div></aside><section class="template-stage"><div class="template-pagebar"><button type="button" data-prev aria-label="หน้าก่อน">←</button><span data-page></span><button type="button" data-next aria-label="หน้าถัดไป">→</button></div><div class="template-scroll"><div class="template-paper"><canvas data-canvas></canvas><div data-overlay></div></div></div><p class="muted">${editing ? "เลือกเพิ่มช่อง แล้วคลิกตำแหน่งบนเอกสาร" : "ข้อมูลที่กรอกและ PDF ผลลัพธ์ไม่ถูกเก็บในบัญชี"}</p></section>${editing ? '<aside class="template-inspector"><h2>ตั้งค่าช่อง</h2><div data-inspector></div></aside>' : ""}</div>`;
+  root.innerHTML = `<header class="workspace-heading template-editor-heading"><div class="template-heading-info"><a class="workspace-back" href="/workspace/templates">← แม่แบบของฉัน</a><h1>${escape(data.name)}</h1><p>${editing ? "วางช่องบนเอกสาร แล้วตั้งค่าทางขวา" : "กรอกข้อมูลแล้วดูตัวอย่างก่อนดาวน์โหลด"}</p></div><div data-actions></div></header><p data-status role="status" class="workspace-status"></p><div class="template-workbench ${editing ? "is-design" : "is-fill"}"><aside class="template-fields"><h2>${editing ? "ช่องข้อมูล" : "ข้อมูลเอกสาร"}</h2><div data-fields></div></aside><section class="template-stage"><div class="template-pagebar"><button type="button" data-prev aria-label="หน้าก่อน">←</button><span data-page></span><button type="button" data-next aria-label="หน้าถัดไป">→</button></div><div class="template-scroll"><div class="template-paper"><canvas data-canvas></canvas><div data-overlay></div></div></div><p class="muted">${editing ? "เลือกเพิ่มช่อง แล้วคลิกตำแหน่งบนเอกสาร" : "ข้อมูลที่กรอกและ PDF ผลลัพธ์ไม่ถูกเก็บในบัญชี"}</p></section>${editing ? '<aside class="template-inspector"><h2>ตั้งค่าช่อง</h2><div data-inspector></div></aside>' : ""}</div>`;
   root.classList.add("has-workbench");
   const bench = root.querySelector(".template-workbench")!;
   const sidebar = document.createElement("div");
@@ -66,12 +85,56 @@ export async function workbench(
   const inspector = root.querySelector(".template-inspector");
   if (inspector) sidebar.append(inspector);
   bench.append(sidebar);
+  if (editing) {
+    const tabs = document.createElement("div");
+    tabs.className = "template-panel-tabs";
+    for (const [mode, label] of [
+      ["fields", "ช่องข้อมูล"],
+      ["properties", "ตั้งค่าช่อง"],
+    ]) {
+      const tab = button(label, () => showPanel(mode));
+      tab.dataset.panelTab = mode;
+      tabs.append(tab);
+    }
+    sidebar.prepend(tabs);
+    const close = button("กลับไปเอกสาร", () => showPanel("canvas"));
+    close.classList.add("template-sheet-close");
+    sidebar.prepend(close);
+    showPanel(matchMedia("(max-width:700px)").matches ? "canvas" : "fields");
+  }
+  function showPanel(mode: string) {
+    (bench as HTMLElement).dataset.panel = mode;
+    for (const tab of sidebar.querySelectorAll<HTMLElement>("[data-panel-tab]"))
+      tab.setAttribute("aria-pressed", String(tab.dataset.panelTab === mode));
+  }
   const get = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
   const status = get("[data-status]");
   const canvas = get<HTMLCanvasElement>("[data-canvas]");
   const overlay = get("[data-overlay]");
+  function setArmed(value: string | undefined) {
+    armed = value;
+    overlay.classList.toggle("is-placing", !!value);
+    const placement = root.querySelector<HTMLElement>(
+      ".template-placement-actions",
+    );
+    if (placement) placement.hidden = !value;
+    if (value) {
+      showPanel("canvas");
+      stage.scrollIntoView({ block: "nearest" });
+      note("คลิกหรือแตะตำแหน่งบนเอกสารเพื่อเพิ่มช่อง");
+    }
+    const add = root.querySelector("[data-add-field]");
+    add?.setAttribute("aria-pressed", String(value === "new"));
+  }
   const stage = get(".template-scroll");
   const fieldPanel = get("[data-fields]");
+  const errorLinks = document.createElement("div");
+  errorLinks.className = "template-error-links";
+  errorLinks.setAttribute("aria-label", "ช่องที่ต้องตรวจ");
+  if (!editing) fieldPanel.before(errorLinks);
+  function previewBusy(busy: boolean) {
+    get(".template-stage").setAttribute("aria-busy", String(busy));
+  }
   const actionPanel = get("[data-actions]");
   if (!editing) {
     const tabs = document.createElement("div");
@@ -94,6 +157,7 @@ export async function workbench(
     get(".template-workbench").before(tabs);
   }
   const report = (e: unknown) => {
+    previewBusy(false);
     status.textContent = e instanceof Error ? e.message : String(e);
     status.classList.add("is-error");
   };
@@ -106,7 +170,11 @@ export async function workbench(
     rename.value = data.name;
     rename.maxLength = 120;
     rename.setAttribute("aria-label", "ชื่อแม่แบบ");
-    get("h1").replaceWith(rename);
+    const nameLabel = document.createElement("label");
+    nameLabel.className = "template-name-label";
+    nameLabel.textContent = "ชื่อแม่แบบ";
+    nameLabel.append(rename);
+    get("h1").replaceWith(nameLabel);
     rename.className = "template-name";
     rename.oninput = () => {
       data.name = rename.value;
@@ -117,38 +185,7 @@ export async function workbench(
     editing ? "บันทึกแม่แบบ" : "ดาวน์โหลด PDF",
     async () => {
       if (editing) {
-        if (!data.name.trim()) {
-          report("กรุณาตั้งชื่อแม่แบบ");
-          return;
-        }
-        primary.disabled = true;
-        try {
-          const snapshot = JSON.stringify({
-            name: data.name,
-            definition: data.definition,
-          });
-          const saved = await api<Template>(`/api/templates/${id}`, {
-            method: "PUT",
-            body: JSON.stringify({
-              name: data.name,
-              version: data.version,
-              definition: data.definition,
-            }),
-          });
-          data.version = saved.version;
-          dirty =
-            snapshot !==
-            JSON.stringify({ name: data.name, definition: data.definition });
-          note(
-            dirty
-              ? "บันทึกแล้ว แต่มีการแก้ไขใหม่ที่ยังไม่ได้บันทึก"
-              : "บันทึกแม่แบบแล้ว",
-          );
-        } catch (e) {
-          report(e);
-        } finally {
-          primary.disabled = false;
-        }
+        await saveTemplate();
       } else {
         if (
           !output ||
@@ -169,6 +206,46 @@ export async function workbench(
     },
     "button button-blue",
   );
+  async function saveTemplate() {
+    if (saving) return false;
+    if (!data.name.trim()) {
+      report("กรุณาตั้งชื่อแม่แบบ");
+      rename?.focus();
+      return false;
+    }
+    saving = true;
+    primary.disabled = true;
+    primary.setAttribute("aria-busy", "true");
+    const saved = JSON.stringify(snapshot());
+    try {
+      const response = await api<Template>(
+        `/api/templates/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ ...snapshot(), version: data.version }),
+          signal,
+        },
+        { silent: true },
+      );
+      data.version = response.version;
+      savedSnapshot = saved;
+      dirty = savedSnapshot !== JSON.stringify(snapshot());
+      note(
+        dirty
+          ? "บันทึกแล้ว แต่มีการแก้ไขใหม่ที่ยังไม่ได้บันทึก"
+          : "บันทึกแม่แบบแล้ว",
+      );
+      return !dirty;
+    } catch (e) {
+      report(e);
+      return false;
+    } finally {
+      saving = false;
+      primary.disabled = false;
+      primary.removeAttribute("aria-busy");
+    }
+  }
+  primary.disabled = !editing;
   actionPanel.append(primary);
   let previewButton: HTMLButtonElement | undefined;
   if (editing) {
@@ -176,7 +253,7 @@ export async function workbench(
       "ดูตัวอย่าง",
       async () => {
         previewing = !previewing;
-        armed = undefined;
+        setArmed(undefined);
         previewButton!.textContent = previewing
           ? "กลับไปจัดช่อง"
           : "ดูตัวอย่าง";
@@ -188,6 +265,7 @@ export async function workbench(
         overlay.hidden = previewing;
         if (previewing) await refresh();
         else {
+          previewBusy(false);
           requestId++;
           worker?.terminate();
           output = undefined;
@@ -203,6 +281,7 @@ export async function workbench(
   function returnToDesign() {
     if (!previewing) return;
     previewing = false;
+    previewBusy(false);
     requestId++;
     worker?.terminate();
     clearTimeout(timer);
@@ -214,27 +293,124 @@ export async function workbench(
     void draw();
   }
   const pagebar = get(".template-pagebar");
+  const tools = document.createElement("div");
+  tools.className = "template-editor-tools";
+  if (editing) {
+    const add = button(
+      "＋ เพิ่มช่องข้อมูล",
+      () => {
+        returnToDesign();
+        setArmed("new");
+      },
+      "button button-blue",
+    );
+    add.setAttribute("data-add-field", "");
+    add.setAttribute("aria-pressed", "false");
+    tools.append(add);
+    const undo = button("↶", () => restoreEdit(history.undo()));
+    undo.setAttribute("aria-label", "เลิกทำ");
+    undo.dataset.undo = "";
+    const redo = button("↷", () => restoreEdit(history.redo()));
+    redo.setAttribute("aria-label", "ทำซ้ำ");
+    redo.dataset.redo = "";
+    tools.append(undo, redo);
+    const list = button("ช่องข้อมูล", () => showPanel("fields"));
+    list.classList.add("template-open-fields");
+    tools.append(list);
+    const placement = document.createElement("div");
+    placement.className = "template-placement-actions";
+    placement.hidden = true;
+    placement.append(
+      button("วางกลางหน้า", () =>
+        placeAt(
+          Math.max(0, (pageWidth - lastStyle.width) / 2),
+          Math.max(0, (pageHeight - lastStyle.height) / 2),
+        ),
+      ),
+      button("ยกเลิกการวาง", () => setArmed(undefined)),
+    );
+    tools.append(placement);
+    get(".template-stage").prepend(tools);
+  }
+  function syncHistory() {
+    const undo = root.querySelector<HTMLButtonElement>("[data-undo]");
+    const redo = root.querySelector<HTMLButtonElement>("[data-redo]");
+    if (undo) undo.disabled = !history.canUndo;
+    if (redo) redo.disabled = !history.canRedo;
+  }
+  function restoreEdit(value: ReturnType<typeof snapshot> | undefined) {
+    if (!value) return;
+    setArmed(undefined);
+    previewBusy(false);
+    data.name = value.name;
+    data.definition = value.definition;
+    if (rename) rename.value = data.name;
+    selected = data.definition.placements.some((p) => p.id === selected)
+      ? selected
+      : data.definition.placements.find((p) => p.page === page)?.id;
+    dirty = JSON.stringify(snapshot()) !== savedSnapshot;
+    requestId++;
+    worker?.terminate();
+    output = undefined;
+    clearTimeout(timer);
+    renderFields();
+    inspect();
+    renderBoxes();
+    syncHistory();
+    note(
+      dirty ? "มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก" : "กลับสู่ฉบับที่บันทึกแล้ว",
+    );
+    if (previewing) void refresh();
+  }
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      const typing =
+        e.target instanceof Element &&
+        !!e.target.closest("input,textarea,[contenteditable=true]");
+      if (
+        !editing ||
+        typing ||
+        !(e.ctrlKey || e.metaKey) ||
+        e.key.toLowerCase() !== "z"
+      )
+        return;
+      e.preventDefault();
+      restoreEdit(e.shiftKey ? history.redo() : history.undo());
+    },
+    { signal },
+  );
+  syncHistory();
   const zoomLabel = document.createElement("span");
   zoomLabel.className = "template-zoom-label";
   const setZoom = (value: number) => {
     zoom = Math.max(0.5, Math.min(2, value));
-    zoomLabel.textContent = Math.round(zoom * 100) + "%";
+    zoomLabel.textContent =
+      (fitWidth ? "พอดีความกว้าง" : "พอดีหน้า") +
+      (zoom === 1 ? "" : ` × ${zoom.toFixed(2)}`);
     void draw();
   };
   const zoomOut = button("−", () => setZoom(zoom - 0.25));
   zoomOut.setAttribute("aria-label", "ย่อเอกสาร");
   const zoomIn = button("+", () => setZoom(zoom + 0.25));
   zoomIn.setAttribute("aria-label", "ขยายเอกสาร");
-  const fit = button("พอดีหน้า", () => setZoom(1));
-  pagebar.append(zoomOut, zoomLabel, zoomIn, fit);
-  zoomLabel.textContent = "100%";
+  const fit = button("พอดีหน้า", () => {
+    fitWidth = false;
+    setZoom(1);
+  });
+  const widthFit = button("พอดีความกว้าง", () => {
+    fitWidth = true;
+    setZoom(1);
+  });
+  pagebar.append(zoomOut, zoomLabel, zoomIn, fit, widthFit);
+  zoomLabel.textContent = fitWidth ? "พอดีความกว้าง" : "พอดีหน้า";
 
   if (editing)
     actionPanel.append(
       Object.assign(document.createElement("a"), {
         href: `/workspace/templates/${id}/fill`,
         textContent: "กรอกข้อมูล",
-        className: "button button-quiet",
+        className: "button button-quiet template-fill-link",
       }),
     );
   else
@@ -250,12 +426,75 @@ export async function workbench(
         )
           return;
         values = defaults(data.definition);
+        touched.clear();
         dirty = false;
         downloaded = false;
         renderFields();
         await refresh();
       }),
     );
+  let handoffOpen = false;
+  window.addEventListener(
+    "click",
+    async (e) => {
+      if (
+        !editing ||
+        !dirty ||
+        e.button !== 0 ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.shiftKey ||
+        e.altKey ||
+        !(e.target instanceof Element) ||
+        !e.target.closest(".template-fill-link")
+      )
+        return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (handoffOpen) return;
+      handoffOpen = true;
+      const dialog = document.createElement("dialog");
+      dialog.className = "leave-dialog";
+      dialog.setAttribute("aria-label", "บันทึกก่อนกรอกข้อมูล");
+      dialog.innerHTML =
+        '<h2>บันทึกก่อนกรอกข้อมูล?</h2><p>ใช้แม่แบบที่แก้ไขล่าสุด หรือเปิดฉบับที่บันทึกไว้</p><div class="leave-dialog-actions"></div>';
+      let canceled = false;
+      const close = () => {
+        canceled = true;
+        dialog.close();
+        dialog.remove();
+        handoffOpen = false;
+      };
+      const next = `/workspace/templates/${id}/fill`;
+      dialog.querySelector("div")!.append(
+        button(
+          "บันทึกและกรอกข้อมูล",
+          async () => {
+            for (const b of dialog.querySelectorAll("button"))
+              b.disabled = true;
+            const ok = await saveTemplate();
+            const navigate = ok && !canceled && !signal.aborted;
+            close();
+            if (navigate) leaveAfterConfirmation(next);
+          },
+          "button button-blue",
+        ),
+        button("ใช้ฉบับที่บันทึกไว้", () => {
+          close();
+          leaveAfterConfirmation(next);
+        }),
+        button("กลับไปแก้ไข", close),
+      );
+      dialog.addEventListener("cancel", (e) => {
+        e.preventDefault();
+        close();
+      });
+      signal.addEventListener("abort", close, { once: true });
+      document.body.append(dialog);
+      dialog.showModal();
+    },
+    { signal, capture: true },
+  );
   guardUnsavedWork(
     () => (editing ? dirty : dirty && !downloaded),
     signal,
@@ -266,7 +505,19 @@ export async function workbench(
   const current = () =>
     data.definition.placements.find((p) => p.id === selected);
   function changed() {
-    dirty = true;
+    history.record(snapshot());
+    syncHistory();
+    dirty = JSON.stringify(snapshot()) !== savedSnapshot;
+    const style = current();
+    if (style)
+      lastStyle = {
+        size: style.size,
+        width: style.width,
+        height: style.height,
+        color: style.color,
+        align: style.align,
+        multiline: style.multiline,
+      };
     note("มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก");
     renderBoxes();
     if (previewing) {
@@ -291,7 +542,7 @@ export async function workbench(
       page,
       Math.max(220, stage.clientWidth - 32),
       zoom,
-      Math.max(250, stage.clientHeight - 32),
+      fitWidth ? Infinity : Math.max(250, stage.clientHeight - 32),
     );
     if (!rendered) return;
     ({ scale, width: pageWidth, height: pageHeight } = rendered);
@@ -304,6 +555,18 @@ export async function workbench(
   }
   function renderBoxes() {
     overlay.hidden = previewing && !!output;
+    const focusId = (document.activeElement as HTMLElement)?.dataset
+      .placementId;
+    const selectedField = data.definition.placements.find(
+      (p) => p.id === selected,
+    )?.fieldId;
+    for (const link of fieldPanel.querySelectorAll<HTMLElement>(
+      "[data-field-link]",
+    ))
+      link.setAttribute(
+        "aria-pressed",
+        String(link.dataset.fieldLink === selectedField),
+      );
     overlay.replaceChildren();
     const l = layout(
       data.definition,
@@ -313,9 +576,11 @@ export async function workbench(
     for (const p of data.definition.placements.filter((p) => p.page === page)) {
       const f = data.definition.fields.find((f) => f.id === p.fieldId)!;
       const box = document.createElement("div");
-      box.className = `template-box ${selected === p.id ? "is-selected" : ""} ${l.invalid.has(p.id) && (!editing || previewing) ? "is-overflow" : ""}`;
+      box.dataset.fieldId = p.fieldId;
+      box.className = `template-box ${selected === p.id ? "is-selected" : ""} ${l.invalid.has(p.id) ? "is-overflow" : ""}`;
       box.style.cssText = `left:${p.x * scale}px;top:${p.y * scale}px;width:${p.width * scale}px;height:${p.height * scale}px;font-size:${p.size * scale}px;text-align:${p.align};color:${p.color}`;
       if (editing) {
+        box.dataset.placementId = p.id;
         box.tabIndex = 0;
         box.setAttribute("role", "button");
         box.setAttribute("aria-label", f.label);
@@ -326,20 +591,59 @@ export async function workbench(
         const sample = l.items.find((item) => item.id === p.id);
         if (sample) box.append(renderGhost(sample, scale));
         box.onclick = (e) => {
+          if (armed) return;
           e.stopPropagation();
           selected = p.id;
           inspect();
           renderBoxes();
         };
         box.onkeydown = (e) => {
-          if (e.key === "Enter") {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
             selected = p.id;
             inspect();
             renderBoxes();
           }
         };
+        const selectKey = box.onkeydown;
+        box.onkeydown = (e) => {
+          if (
+            ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)
+          ) {
+            e.preventDefault();
+            const step = e.shiftKey ? 10 : 1;
+            p.x = Math.max(
+              0,
+              Math.min(
+                pageWidth - p.width,
+                p.x +
+                  (e.key === "ArrowRight"
+                    ? step
+                    : e.key === "ArrowLeft"
+                      ? -step
+                      : 0),
+              ),
+            );
+            p.y = Math.max(
+              0,
+              Math.min(
+                pageHeight - p.height,
+                p.y +
+                  (e.key === "ArrowDown"
+                    ? step
+                    : e.key === "ArrowUp"
+                      ? -step
+                      : 0),
+              ),
+            );
+            selected = p.id;
+            changed();
+            return;
+          }
+          selectKey?.call(box, e);
+        };
         box.onpointerdown = (e) => {
-          if (e.button !== 0) return;
+          if (e.button !== 0 || armed) return;
           e.stopPropagation();
           selected = p.id;
           const x = e.clientX,
@@ -356,6 +660,16 @@ export async function workbench(
               0,
               Math.min(pageHeight - p.height, py + (move.clientY - y) / scale),
             );
+            if (snapAlign) {
+              for (const other of data.definition.placements.filter(
+                (o) => o.page === page && o.id !== p.id,
+              )) {
+                if (Math.abs(p.x - other.x) < 4)
+                  p.x = Math.min(pageWidth - p.width, other.x);
+                if (Math.abs(p.y - other.y) < 4)
+                  p.y = Math.min(pageHeight - p.height, other.y);
+              }
+            }
             box.style.left = p.x * scale + "px";
             box.style.top = p.y * scale + "px";
             dirty = true;
@@ -379,6 +693,19 @@ export async function workbench(
         box.title = l.errors[f.id] ?? "";
       }
       overlay.append(box);
+    }
+    if (focusId)
+      [...overlay.querySelectorAll<HTMLElement>("[data-placement-id]")]
+        .find((e) => e.dataset.placementId === focusId)
+        ?.focus({ preventScroll: true });
+    if (editing) {
+      const hint = root.querySelector<HTMLElement>("[data-sample-error]");
+      const p = current();
+      if (hint)
+        hint.textContent =
+          p && l.invalid.has(p.id)
+            ? "ข้อความล้นช่อง · ขยายช่องหรือเปิดหลายบรรทัด"
+            : "";
     }
   }
   function dropdown(
@@ -412,6 +739,15 @@ export async function workbench(
       area.innerHTML = '<p class="muted">เลือกช่องบนเอกสารเพื่อตั้งค่า</p>';
       return;
     }
+    showPanel("properties");
+    lastStyle = {
+      size: p.size,
+      width: p.width,
+      height: p.height,
+      color: p.color,
+      align: p.align,
+      multiline: p.multiline,
+    };
     const f = data.definition.fields.find((f) => f.id === p.fieldId)!;
     const input = (
       label: string,
@@ -448,8 +784,11 @@ export async function workbench(
     area.append(sizeLabel);
     sizeInput.onchange = () => {
       p.size = Math.max(8, Math.min(72, Number(sizeInput.value) || 16));
+      if (!p.multiline) p.height = Math.max(16, p.size * 1.6);
+      p.y = Math.min(p.y, Math.max(0, pageHeight - p.height));
       sizeInput.value = String(p.size);
       changed();
+      updateGeometryInputs();
     };
     const trialLabel = document.createElement("label");
     trialLabel.textContent = "ข้อความทดลอง";
@@ -462,6 +801,11 @@ export async function workbench(
     const hint = document.createElement("small");
     hint.className = "muted";
     hint.textContent = "ใช้ดูตัวอย่างเท่านั้น ไม่บันทึกเป็นค่าเริ่มต้น";
+    const sampleError = document.createElement("p");
+    sampleError.dataset.sampleError = "";
+    sampleError.className = "template-field-error";
+    sampleError.setAttribute("role", "status");
+    area.append(sampleError);
     area.append(hint);
     trial.oninput = () => {
       samples[f.id] = trial.value;
@@ -472,7 +816,9 @@ export async function workbench(
       renderBoxes();
       if (previewing) timer = setTimeout(() => void refresh(), 350);
     };
-    input("ชื่อช่อง", f.label, "text", (s) => (f.label = s)).maxLength = 100;
+    const fieldName = input("ชื่อช่อง", f.label, "text", (s) => (f.label = s));
+    fieldName.maxLength = 100;
+    area.prepend(fieldName.parentElement!);
     dropdown(
       area,
       "ชนิดข้อมูล",
@@ -513,10 +859,26 @@ export async function workbench(
       };
     };
     check("จำเป็นต้องกรอก", f.required, (v) => (f.required = v));
-    check("อนุญาตหลายบรรทัด", p.multiline, (v) => (p.multiline = v));
+    check("อนุญาตหลายบรรทัด", p.multiline, (v) => {
+      p.multiline = v;
+      p.height = Math.max(16, p.size * 1.6 * (v ? 3 : 1));
+      p.height = Math.min(p.height, pageHeight);
+      p.y = Math.min(p.y, pageHeight - p.height);
+      updateGeometryInputs();
+    });
     const geometry = document.createElement("details");
     geometry.className = "template-geometry";
     geometry.innerHTML = "<summary>ขนาดและตำแหน่งช่อง</summary>";
+    const snap = document.createElement("label");
+    snap.className = "template-check";
+    const snapInput = document.createElement("input");
+    snapInput.type = "checkbox";
+    snapInput.checked = snapAlign;
+    snapInput.onchange = () => {
+      snapAlign = snapInput.checked;
+    };
+    snap.append(snapInput, document.createTextNode("ช่วยจัดแนวขณะลาก"));
+    geometry.append(snap);
     area.append(geometry);
     for (const [key, label, min, max] of [
       ["width", "ความกว้างช่อง", 20, pageWidth - p.x],
@@ -536,10 +898,29 @@ export async function workbench(
                   ? pageHeight - p.height
                   : max;
         p[key] = Math.max(min, Math.min(upper, Number(s) || min));
+        updateGeometryInputs();
       });
+      i.dataset.geometry = key;
       geometry.append(i.parentElement!);
       i.min = String(min);
       i.max = String(max);
+    }
+    function updateGeometryInputs() {
+      for (const i of area.querySelectorAll<HTMLInputElement>(
+        "[data-geometry]",
+      )) {
+        const key = i.dataset.geometry as "width" | "height" | "x" | "y";
+        i.value = String(Math.round(p![key]));
+        i.max = String(
+          key === "width"
+            ? pageWidth - p!.x
+            : key === "height"
+              ? pageHeight - p!.y
+              : key === "x"
+                ? pageWidth - p!.width
+                : pageHeight - p!.height,
+        );
+      }
     }
     dropdown(
       area,
@@ -558,9 +939,36 @@ export async function workbench(
     );
     input("สีตัวอักษร", p.color, "color", (s) => (p.color = s));
     area.append(
+      button("ทำสำเนาเป็นช่องใหม่", () => {
+        if (
+          data.definition.fields.length >= limits.maxFields ||
+          data.definition.placements.length >= limits.maxPlacements
+        ) {
+          report("จำนวนช่องเกินขีดจำกัด");
+          return;
+        }
+        const copy = {
+          ...f,
+          id: crypto.randomUUID(),
+          label: f.label + " (สำเนา)",
+        };
+        const placement = {
+          ...p,
+          id: crypto.randomUUID(),
+          fieldId: copy.id,
+          x: Math.min(pageWidth - p.width, p.x + 12),
+          y: Math.min(pageHeight - p.height, p.y + 32),
+        };
+        data.definition.fields.push(copy);
+        data.definition.placements.push(placement);
+        selected = placement.id;
+        changed();
+        renderFields();
+        inspect();
+      }),
       button("วางข้อมูลนี้อีกตำแหน่ง", () => {
         returnToDesign();
-        armed = f.id;
+        setArmed(f.id);
         note("คลิกตำแหน่งใหม่บนเอกสารเพื่อใช้ข้อมูลเดิม");
       }),
       button("ลบตำแหน่งนี้", () => {
@@ -577,21 +985,14 @@ export async function workbench(
         inspect();
       }),
     );
+    const checkLayout = layout(data.definition, sampleValues(), measure);
+    sampleError.textContent = checkLayout.invalid.has(p.id)
+      ? "ข้อความล้นช่อง · ขยายช่องหรือเปิดหลายบรรทัด"
+      : "";
   }
   function renderFields() {
     fieldPanel.replaceChildren();
     if (editing) {
-      fieldPanel.append(
-        button(
-          "＋ เพิ่มช่องข้อมูล",
-          () => {
-            returnToDesign();
-            armed = "new";
-            note("คลิกตำแหน่งบนเอกสารเพื่อเพิ่มช่อง");
-          },
-          "button button-blue",
-        ),
-      );
       for (const f of data.definition.fields) {
         const b = button(
           f.label,
@@ -607,7 +1008,40 @@ export async function workbench(
           },
           "template-field-link",
         );
-        fieldPanel.append(b);
+        b.dataset.fieldLink = f.id;
+        b.setAttribute(
+          "aria-pressed",
+          String(
+            data.definition.placements.find((p) => p.id === selected)
+              ?.fieldId === f.id,
+          ),
+        );
+        const row = document.createElement("div");
+        row.className = "template-field-row";
+        row.append(b);
+        for (const [step, label] of [
+          [-1, "ขึ้น"],
+          [1, "ลง"],
+        ] as const) {
+          const move = button(step === -1 ? "↑" : "↓", () => {
+            const index = data.definition.fields.findIndex(
+                (item) => item.id === f.id,
+              ),
+              to = index + step;
+            if (to < 0 || to >= data.definition.fields.length) return;
+            data.definition.fields.splice(index, 1);
+            data.definition.fields.splice(to, 0, f);
+            changed();
+            renderFields();
+          });
+          move.setAttribute("aria-label", `ย้าย ${f.label} ${label}`);
+          move.disabled =
+            data.definition.fields.indexOf(f) + step < 0 ||
+            data.definition.fields.indexOf(f) + step >=
+              data.definition.fields.length;
+          row.append(move);
+        }
+        fieldPanel.append(row);
       }
       if (!data.definition.fields.length)
         fieldPanel.insertAdjacentHTML(
@@ -628,7 +1062,35 @@ export async function workbench(
         const error = document.createElement("span");
         error.className = "template-field-error";
         error.dataset.error = f.id;
+        error.id = "field-error-" + f.id;
+        input.setAttribute("aria-describedby", error.id);
         l.append(input, error);
+        const placements = data.definition.placements.filter(
+          (p) => p.fieldId === f.id,
+        );
+        const positions = document.createElement("span");
+        positions.className = "template-field-positions";
+        for (const placement of placements) {
+          const link = button(`ดูหน้า ${placement.page + 1}`, async () => {
+            page = placement.page;
+            selected = placement.id;
+            get(".template-workbench").dataset.mobileView = "preview";
+            for (const tab of root.querySelectorAll(
+              ".template-mobile-tabs button",
+            ))
+              tab.setAttribute(
+                "aria-pressed",
+                String(tab.textContent === "ดูตัวอย่าง"),
+              );
+            await draw();
+            stage.scrollTop = Math.max(
+              0,
+              placement.y * scale - stage.clientHeight / 3,
+            );
+          });
+          positions.append(link);
+        }
+        l.append(positions);
         fieldPanel.append(l);
         if (
           f.type === "text" &&
@@ -640,13 +1102,46 @@ export async function workbench(
           text.value = input.value;
           text.setAttribute("aria-label", f.label);
           text.maxLength = 10000;
+          text.setAttribute("aria-describedby", error.id);
+          text.onfocus = () => void focusField(f.id);
+          text.onblur = () => {
+            touched.add(f.id);
+            updateValidation(layout(data.definition, values, measure));
+          };
           input.replaceWith(text);
           text.oninput = () => onValue(f.id, text.value);
-        } else input.oninput = () => onValue(f.id, input.value);
+        } else {
+          input.oninput = () => onValue(f.id, input.value);
+          input.onfocus = () => void focusField(f.id);
+          input.onblur = () => {
+            touched.add(f.id);
+            updateValidation(layout(data.definition, values, measure));
+          };
+        }
       }
       if (!data.definition.fields.length)
         fieldPanel.innerHTML =
           "<p>แม่แบบนี้ยังไม่มีช่องข้อมูล กรุณาแก้ไขแม่แบบก่อน</p>";
+    }
+  }
+  async function focusField(id: string, preferInvalid = false) {
+    const invalid = preferInvalid
+      ? layout(data.definition, values, measure).invalid
+      : undefined;
+    const p =
+      data.definition.placements.find(
+        (p) => p.fieldId === id && invalid?.has(p.id),
+      ) ?? data.definition.placements.find((p) => p.fieldId === id);
+    if (!p) return;
+    selected = p.id;
+    page = p.page;
+    await draw();
+    const box = [...overlay.children].find(
+      (b) => (b as HTMLElement).dataset.fieldId === id,
+    ) as HTMLElement | undefined;
+    if (box) {
+      stage.scrollTop = p.y * scale - stage.clientHeight / 3;
+      stage.scrollLeft = Math.max(0, p.x * scale - stage.clientWidth / 3);
     }
   }
   function onValue(id: string, v: string) {
@@ -656,6 +1151,7 @@ export async function workbench(
     dirty = true;
     downloaded = false;
     output = undefined;
+    previewBusy(true);
     primary.disabled = true;
     clearTimeout(timer);
     timer = setTimeout(() => void refresh(), 350);
@@ -675,16 +1171,8 @@ export async function workbench(
       ]),
     );
   }
-  async function refresh() {
-    if (editing && !previewing) return;
-    const generation = ++requestId;
-    worker?.terminate();
-    output = undefined;
-    const l = layout(
-      data.definition,
-      editing ? sampleValues() : values,
-      measure,
-    );
+  function updateValidation(l: ReturnType<typeof layout>) {
+    errorLinks.replaceChildren();
     for (const el of fieldPanel.querySelectorAll<HTMLElement>("[data-error]")) {
       const fieldId = el.dataset.error!;
       const overflowPages = [
@@ -695,11 +1183,34 @@ export async function workbench(
         ),
       ];
       el.textContent =
-        (l.errors[fieldId] ?? "") +
+        (touched.has(fieldId) || !!values[fieldId]?.trim()
+          ? (l.errors[fieldId] ?? "")
+          : "") +
         (overflowPages.length ? ` (หน้า ${overflowPages.join(", ")})` : "");
       const input = el.parentElement!.querySelector("input,textarea")!;
       input.setAttribute("aria-invalid", String(!!el.textContent));
+      if (el.textContent) {
+        const field = data.definition.fields.find((f) => f.id === fieldId)!;
+        const link = button(field.label, () => {
+          (input as HTMLElement).focus();
+          void focusField(fieldId, true);
+        });
+        errorLinks.append(link);
+      }
     }
+  }
+  async function refresh() {
+    if (editing && !previewing) return;
+    const generation = ++requestId;
+    previewBusy(false);
+    worker?.terminate();
+    output = undefined;
+    const l = layout(
+      data.definition,
+      editing ? sampleValues() : values,
+      measure,
+    );
+    updateValidation(l);
     if (!editing) primary.disabled = true;
     renderBoxes();
     if (Object.keys(l.errors).length || !data.definition.fields.length) {
@@ -717,10 +1228,11 @@ export async function workbench(
       note(
         editing
           ? "ตรวจข้อความทดลอง — " + messages.join(" · ")
-          : "กรอกข้อมูลให้ครบและแก้ช่องที่แจ้งเตือนก่อนดาวน์โหลด",
+          : `กรอกข้อมูลให้ครบก่อนดาวน์โหลด · เหลือ ${Object.keys(l.errors).length} ช่อง`,
       );
       return;
     }
+    previewBusy(true);
     note("กำลังสร้างตัวอย่าง…");
     const w = (worker = new Worker("/js/export.worker.js", { type: "module" }));
     const timeout = setTimeout(() => {
@@ -743,6 +1255,7 @@ export async function workbench(
         await draw();
         if (generation !== requestId || signal.aborted) return;
         renderBoxes();
+        previewBusy(false);
         if (!editing) primary.disabled = false;
         note(
           editing
@@ -765,67 +1278,73 @@ export async function workbench(
       font: font.slice(),
     });
   }
+  function placeAt(x: number, y: number) {
+    if (!editing || previewing || !armed) return;
+    if (
+      data.definition.placements.length >= limits.maxPlacements ||
+      (armed === "new" && data.definition.fields.length >= limits.maxFields)
+    ) {
+      report("จำนวนช่องเกินขีดจำกัด");
+      return;
+    }
+    let fid = armed;
+    if (armed === "new") {
+      fid = crypto.randomUUID();
+      data.definition.fields.push({
+        id: fid,
+        label: `ช่องข้อมูล ${data.definition.fields.length + 1}`,
+        type: "text",
+        required: false,
+        defaultValue: "",
+      });
+    }
+    const p: Placement = {
+      id: crypto.randomUUID(),
+      fieldId: fid,
+      page,
+      x: Math.max(
+        0,
+        Math.min(pageWidth - Math.min(lastStyle.width, pageWidth), x),
+      ),
+      y: Math.max(
+        0,
+        Math.min(pageHeight - Math.min(lastStyle.height, pageHeight), y),
+      ),
+      ...lastStyle,
+      width: Math.min(lastStyle.width, pageWidth),
+      height: Math.min(lastStyle.height, pageHeight),
+    };
+    data.definition.placements.push(p);
+    selected = p.id;
+    setArmed(undefined);
+    changed();
+    renderFields();
+    inspect();
+  }
   overlay.addEventListener(
     "click",
     (e) => {
-      if (!editing || previewing || !armed) return;
-      if (
-        data.definition.placements.length >= limits.maxPlacements ||
-        (armed === "new" && data.definition.fields.length >= limits.maxFields)
-      ) {
-        report("จำนวนช่องเกินขีดจำกัด");
-        return;
-      }
       const rect = overlay.getBoundingClientRect();
-      let fid = armed;
-      if (armed === "new") {
-        fid = crypto.randomUUID();
-        data.definition.fields.push({
-          id: fid,
-          label: `ช่องข้อมูล ${data.definition.fields.length + 1}`,
-          type: "text",
-          required: false,
-          defaultValue: "",
-        });
-      }
-      const p: Placement = {
-        id: crypto.randomUUID(),
-        fieldId: fid,
-        page,
-        x: Math.max(
-          0,
-          Math.min(pageWidth - 180, (e.clientX - rect.left) / scale),
-        ),
-        y: Math.max(
-          0,
-          Math.min(pageHeight - 40, (e.clientY - rect.top) / scale),
-        ),
-        width: Math.min(180, pageWidth),
-        height: 40,
-        size: 16,
-        color: "#172433",
-        align: "left",
-        multiline: false,
-      };
-      data.definition.placements.push(p);
-      selected = p.id;
-      armed = undefined;
-      changed();
-      renderFields();
-      inspect();
+      placeAt((e.clientX - rect.left) / scale, (e.clientY - rect.top) / scale);
     },
     { signal },
   );
+  async function changePage(next: number) {
+    page = next;
+    if (editing) {
+      selected = undefined;
+      inspect();
+    }
+    await draw();
+  }
   get("[data-prev]").onclick = () => {
     if (page > 0) {
-      page--;
-      void draw();
+      void changePage(page - 1);
     }
   };
   get("[data-next]").onclick = () => {
     if (page < original.doc!.numPages - 1) {
-      page++;
-      void draw();
+      void changePage(page + 1);
     }
   };
   let resizeTimer: ReturnType<typeof setTimeout>;
@@ -867,9 +1386,8 @@ export async function workbench(
         built = true;
         for (let i = 0; i < original.doc!.numPages && !signal.aborted; i++) {
           const b = button(`หน้า ${i + 1}`, () => {
-            page = i;
             pages.open = false;
-            void draw();
+            void changePage(i);
           });
           b.setAttribute("aria-label", `ไปหน้า ${i + 1}`);
           const preview = document.createElement("canvas");

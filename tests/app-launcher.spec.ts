@@ -55,3 +55,16 @@ test("signed-in launcher opens private templates and closes on outside click", a
   await page.locator("h1").click();
   await expect(page.locator(".account-menu")).not.toHaveAttribute("open", "");
 });
+
+test("launcher has neutral idle styling and an active state only when open", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const launcher = page.getByLabel("แอป DocNori", { exact: true });
+  await expect(launcher).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await launcher.click();
+  await expect(launcher).toHaveCSS("background-color", "rgb(234, 246, 255)");
+  await page.keyboard.press("Escape");
+  await page.mouse.move(0, 0);
+  await expect(launcher).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+});

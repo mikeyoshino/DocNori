@@ -1,8 +1,15 @@
+import { withActivity } from "../shared/activity";
 let token = "";
 export async function api<T = any>(
   path: string,
   init: RequestInit = {},
+  options: { silent?: boolean } = {},
 ): Promise<T> {
+  return options.silent
+    ? request<T>(path, init)
+    : withActivity(() => request<T>(path, init));
+}
+async function request<T>(path: string, init: RequestInit): Promise<T> {
   if (init.method && init.method !== "GET") {
     if (!token) {
       const r = await fetch("/api/account/csrf", {

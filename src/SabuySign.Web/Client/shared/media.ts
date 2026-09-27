@@ -1,3 +1,4 @@
+import { beginActivity } from "./activity";
 import { guardUnsavedWork } from "./leave-guard";
 export type MediaOptions = {
   kind: "gif" | "mp3" | "word-pdf";
@@ -68,6 +69,7 @@ export class MediaSession {
       }
       return r;
     };
+    const finishActivity = beginActivity();
     try {
       status("กำลังเตรียมอัปโหลด…");
       const created = await (
@@ -118,6 +120,8 @@ export class MediaSession {
     } catch (e) {
       this.leave();
       throw e;
+    } finally {
+      finishActivity();
     }
   }
 }
