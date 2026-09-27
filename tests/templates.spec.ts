@@ -831,12 +831,23 @@ test("designer communicates placement mode and sizes single-line boxes with the 
   await overlay.click({ position: { x: 100, y: 220 } });
   await expect(overlay).not.toHaveClass(/is-placing/);
   const box = page.locator(".template-box.is-selected");
-  const before = (await box.boundingBox())!;
+  let before: { width: number; height: number } | null = null;
+  await expect
+    .poll(async () => {
+      before = await box.boundingBox();
+      return before?.height ?? 0;
+    })
+    .toBeGreaterThan(0);
   await page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }).fill("8");
   await page.getByLabel("ขนาดตัวอักษร (pt)", { exact: true }).blur();
-  const after = (await box.boundingBox())!;
-  expect(after.height).toBeLessThan(before.height);
-  expect(after.width).toBeCloseTo(before.width, 0);
+  let after: { width: number; height: number } | null = null;
+  await expect
+    .poll(async () => {
+      after = await box.boundingBox();
+      return after?.height ?? Infinity;
+    })
+    .toBeLessThan(before!.height);
+  expect(after!.width).toBeCloseTo(before!.width, 0);
   await page.screenshot({ path: "artifacts/template-editor-polished.png" });
 });
 
